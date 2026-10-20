@@ -80,6 +80,67 @@ footer {
   main {
     margin: 28px auto;
   }
+  
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  margin: 24px auto;
+  text-align: left;
+}
+
+#loginForm label {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+#loginForm input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+#loginForm input:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  background: var(--navy);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+#loginButton {
+  margin-top: 10px;
+}
+
+#status {
+  overflow-wrap: anywhere;
+}
+
+#studentPanel {
+  margin-top: 24px;
+}
+
+#studentPanel[hidden] {
+  display: none;
+}
+
 
   section {
     padding: 28px 18px;
