@@ -88,6 +88,54 @@ function paparProfilPelajar(pelajar) {
     "Login berjaya. Sesi pelajar telah diwujudkan.";
 }
 
+async function muatkanSubjek() {
+  const statusSubjek = document.getElementById("statusSubjek");
+  const senaraiSubjek = document.getElementById("senaraiSubjek");
+  const tokenSesi = sessionStorage.getItem(KUNCI_SESI);
+
+  senaraiSubjek.replaceChildren();
+  statusSubjek.textContent = "Sedang memuatkan subjek...";
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "senaraiSubjek",
+      tokenSesi: tokenSesi
+    });
+
+    if (!hasil.berjaya || !Array.isArray(hasil.subjek)) {
+      statusSubjek.textContent =
+        hasil.mesej || "Subjek tidak dapat dimuatkan.";
+      return;
+    }
+
+    if (hasil.subjek.length === 0) {
+      statusSubjek.textContent =
+        "Tiada subjek aktif untuk semester dan program anda.";
+      return;
+    }
+
+    statusSubjek.textContent =
+      "Jumlah subjek: " + hasil.subjek.length;
+
+    hasil.subjek.forEach(function (subjek) {
+      const kad = document.createElement("div");
+      const tajuk = document.createElement("h3");
+      const kod = document.createElement("p");
+
+      tajuk.textContent = subjek.namaKursus;
+      kod.textContent = "Kod kursus: " + subjek.kodKursus;
+
+      kad.appendChild(tajuk);
+      kad.appendChild(kod);
+      senaraiSubjek.appendChild(kad);
+    });
+  } catch (ralat) {
+    console.error("Ralat memuatkan subjek:", ralat);
+    statusSubjek.textContent =
+      "Subjek gagal dimuatkan. Sila cuba log masuk semula.";
+  }
+}
+
 document
   .getElementById("logoutButton")
   .addEventListener("click", async function () {
