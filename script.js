@@ -118,18 +118,80 @@ async function muatkanSubjek() {
     statusSubjek.textContent =
       "Jumlah subjek: " + hasil.subjek.length;
 
-    hasil.subjek.forEach(function (subjek) {
-      const kad = document.createElement("div");
-      const tajuk = document.createElement("h3");
-      const kod = document.createElement("p");
+    
+hasil.subjek.forEach(function (subjek) {
+  const kad = document.createElement("div");
+  const tajuk = document.createElement("h3");
+  const kod = document.createElement("p");
+  const butang = document.createElement("button");
 
-      tajuk.textContent = subjek.namaKursus;
-      kod.textContent = "Kod kursus: " + subjek.kodKursus;
+  tajuk.textContent = subjek.namaKursus;
+  kod.textContent = "Kod kursus: " + subjek.kodKursus;
 
-      kad.appendChild(tajuk);
-      kad.appendChild(kod);
-      senaraiSubjek.appendChild(kad);
-    });
+  butang.type = "button";
+  butang.textContent = "Lihat Kuiz";
+
+  butang.addEventListener("click", async function () {
+    const statusKuiz = document.getElementById("statusKuiz");
+    const senaraiKuiz = document.getElementById("senaraiKuiz");
+    const tokenSesi = sessionStorage.getItem(KUNCI_SESI);
+
+    senaraiKuiz.replaceChildren();
+    statusKuiz.textContent = "Sedang memuatkan kuiz...";
+    butang.disabled = true;
+
+    try {
+      const hasilKuiz = await panggilAPI({
+        tindakan: "senaraiKuizSubjek",
+        kodKursus: subjek.kodKursus,
+        tokenSesi: tokenSesi
+      });
+
+      if (!hasilKuiz.berjaya || !Array.isArray(hasilKuiz.kuiz)) {
+        statusKuiz.textContent =
+          hasilKuiz.mesej || "Senarai kuiz gagal dimuatkan.";
+        return;
+      }
+
+      if (hasilKuiz.kuiz.length === 0) {
+        statusKuiz.textContent =
+          "Tiada kuiz aktif untuk subjek ini.";
+        return;
+      }
+
+      statusKuiz.textContent =
+        "Jumlah kuiz aktif: " + hasilKuiz.kuiz.length;
+
+      hasilKuiz.kuiz.forEach(function (kuiz) {
+        const kadKuiz = document.createElement("div");
+        const tajukKuiz = document.createElement("h4");
+        const maklumatKuiz = document.createElement("p");
+
+        tajukKuiz.textContent = kuiz.tajuk;
+        maklumatKuiz.textContent =
+          "Kod: " + kuiz.kodPentaksiran +
+          " | Markah penuh: " + kuiz.markahPenuh +
+          " | Tempoh: " + kuiz.tempohMinit + " minit";
+
+        kadKuiz.appendChild(tajukKuiz);
+        kadKuiz.appendChild(maklumatKuiz);
+        senaraiKuiz.appendChild(kadKuiz);
+      });
+    } catch (ralat) {
+      console.error("Ralat memuatkan kuiz:", ralat);
+      statusKuiz.textContent =
+        "Kuiz gagal dimuatkan. Cuba lagi.";
+    } finally {
+      butang.disabled = false;
+    }
+  });
+
+  kad.appendChild(tajuk);
+  kad.appendChild(kod);
+  kad.appendChild(butang);
+  senaraiSubjek.appendChild(kad);
+});
+
   } catch (ralat) {
     console.error("Ralat memuatkan subjek:", ralat);
     statusSubjek.textContent =
