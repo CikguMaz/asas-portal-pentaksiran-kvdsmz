@@ -62,7 +62,6 @@ loginForm.addEventListener("submit", async function (event) {
 paparProfilPelajar(hasil.pelajar);
 loginForm.reset();
 statusElement.textContent = "Login berjaya.";
-
 await muatkanSubjek();
 
   } catch (ralat) {
