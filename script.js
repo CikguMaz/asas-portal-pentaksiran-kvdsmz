@@ -59,9 +59,11 @@ loginForm.addEventListener("submit", async function (event) {
 
     sessionStorage.setItem(KUNCI_SESI, hasil.tokenSesi);
 
-    paparProfilPelajar(hasil.pelajar);
-    loginForm.reset();
-    statusElement.textContent = "Login berjaya.";
+paparProfilPelajar(hasil.pelajar);
+loginForm.reset();
+statusElement.textContent = "Login berjaya.";
+
+await muatkanSubjek();
 
   } catch (ralat) {
     console.error("Ralat login:", ralat);
