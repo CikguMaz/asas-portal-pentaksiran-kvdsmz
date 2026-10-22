@@ -162,20 +162,108 @@ hasil.subjek.forEach(function (subjek) {
       statusKuiz.textContent =
         "Jumlah kuiz aktif: " + hasilKuiz.kuiz.length;
 
-      hasilKuiz.kuiz.forEach(function (kuiz) {
-        const kadKuiz = document.createElement("div");
-        const tajukKuiz = document.createElement("h4");
-        const maklumatKuiz = document.createElement("p");
+     hasilKuiz.kuiz.forEach(function (kuiz) {
+  const kadKuiz = document.createElement("div");
+  const tajukKuiz = document.createElement("h4");
+  const maklumatKuiz = document.createElement("p");
+  const butangMula = document.createElement("button");
 
-        tajukKuiz.textContent = kuiz.tajuk;
-        maklumatKuiz.textContent =
-          "Kod: " + kuiz.kodPentaksiran +
-          " | Markah penuh: " + kuiz.markahPenuh +
-          " | Tempoh: " + kuiz.tempohMinit + " minit";
+  tajukKuiz.textContent = kuiz.tajuk;
 
-        kadKuiz.appendChild(tajukKuiz);
-        kadKuiz.appendChild(maklumatKuiz);
-        senaraiKuiz.appendChild(kadKuiz);
+  maklumatKuiz.textContent =
+    "Kod: " + kuiz.kodPentaksiran +
+    " | Markah penuh: " + kuiz.markahPenuh +
+    " | Tempoh: " + kuiz.tempohMinit + " minit";
+
+  butangMula.textContent = "Mula Kuiz";
+
+  butangMula.addEventListener("click", function () {
+    const tokenSesiKuiz = sessionStorage.getItem(KUNCI_SESI);
+    const statusSoalan = document.getElementById("statusSoalan");
+    const senaraiSoalan = document.getElementById("senaraiSoalan");
+
+    statusSoalan.textContent = "Sedang memuatkan soalan...";
+    senaraiSoalan.replaceChildren();
+    butangMula.disabled = true;
+
+    panggilAPI({
+      tindakan: "soalanKuiz",
+      kodPentaksiran: kuiz.kodPentaksiran,
+      tokenSesi: tokenSesiKuiz
+    })
+      .then(function (hasilSoalan) {
+        if (!hasilSoalan.berjaya) {
+          throw new Error(
+            hasilSoalan.mesej || "Soalan gagal dimuatkan."
+          );
+        }
+
+        if (
+          !Array.isArray(hasilSoalan.soalan) ||
+          hasilSoalan.soalan.length === 0
+        ) {
+          statusSoalan.textContent =
+            "Tiada soalan tersedia untuk kuiz ini.";
+          return;
+        }
+
+        statusSoalan.textContent =
+          "Jumlah soalan: " + hasilSoalan.soalan.length;
+
+        hasilSoalan.soalan.forEach(function (soalan, indeks) {
+          const kadSoalan = document.createElement("div");
+          const tajukSoalan = document.createElement("h4");
+          const pilihan = document.createElement("div");
+
+          tajukSoalan.textContent =
+            (indeks + 1) + ". " + soalan.soalan;
+
+          const pilihanJawapan = [
+            ["A", soalan.pilihanA],
+            ["B", soalan.pilihanB],
+            ["C", soalan.pilihanC],
+            ["D", soalan.pilihanD]
+          ];
+
+          pilihanJawapan.forEach(function (item) {
+            const label = document.createElement("label");
+            const radio = document.createElement("input");
+
+            radio.type = "radio";
+            radio.name = "jawapan_" + soalan.kodSoalan;
+            radio.value = item[0];
+
+            label.appendChild(radio);
+            label.appendChild(
+              document.createTextNode(
+                " " + item[0] + ". " + (item[1] || "")
+              )
+            );
+
+            pilihan.appendChild(label);
+            pilihan.appendChild(document.createElement("br"));
+          });
+
+          kadSoalan.appendChild(tajukSoalan);
+          kadSoalan.appendChild(pilihan);
+          senaraiSoalan.appendChild(kadSoalan);
+        });
+      })
+      .catch(function (ralat) {
+        statusSoalan.textContent =
+          "Ralat: " + ralat.message;
+      })
+      .finally(function () {
+        butangMula.disabled = false;
+      });
+  });
+
+  kadKuiz.appendChild(tajukKuiz);
+  kadKuiz.appendChild(maklumatKuiz);
+  kadKuiz.appendChild(butangMula);
+
+  senaraiKuiz.appendChild(kadKuiz);
+});
       });
     } catch (ralat) {
       console.error("Ralat memuatkan kuiz:", ralat);
