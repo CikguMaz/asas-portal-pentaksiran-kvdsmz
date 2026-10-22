@@ -4,83 +4,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#12345a">
-  <title>ASAS | Portal Pentaksiran KVDSMZ</title>
+  <meta name="theme-color" content="#12305a">
+  <title>Dashboard Pensyarah | ASAS KVDSMZ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>ASAS</h1>
-    <p>Portal Pentaksiran KVDSMZ</p>
+  <header class="header">
+    <div class="container">
+      <h1>ASAS</h1>
+      <p>Portal Pentaksiran KVDSMZ</p>
+      <span>Dashboard Pensyarah V2</span>
+    </div>
   </header>
 
-  <main>
-    <section id="loginPanel">
-      <h2>Log Masuk Pelajar</h2>
-      <p>Masukkan nombor pelajar dan PIN anda.</p>
+  <main class="container">
+    <!-- LOGIN PENSYARAH -->
+    <section id="loginPanel" class="panel">
+      <h2>Log Masuk Pensyarah</h2>
+      <p>Masukkan ID pensyarah dan PIN yang telah didaftarkan.</p>
 
       <form id="loginForm">
-        <label for="noPelajar">Nombor Pelajar</label>
+        <label for="idPensyarah">ID Pensyarah</label>
         <input
-          id="noPelajar"
-          name="noPelajar"
           type="text"
+          id="idPensyarah"
+          name="idPensyarah"
           autocomplete="username"
           required
-          maxlength="30"
-          placeholder="Contoh: UJIAN001"
         >
 
-        <label for="pin">PIN 6 Digit</label>
+        <label for="pinPensyarah">PIN</label>
         <input
-          id="pin"
-          name="pin"
           type="password"
+          id="pinPensyarah"
+          name="pinPensyarah"
           inputmode="numeric"
-          pattern="[0-9]{6}"
-          minlength="6"
-          maxlength="6"
           autocomplete="current-password"
           required
-          placeholder="Masukkan PIN"
         >
 
-        <button id="loginButton" type="submit">Log Masuk</button>
+        <button type="submit" id="loginButton">
+          Log Masuk
+        </button>
       </form>
 
-      <p id="status" role="status" aria-live="polite">
-        Sila log masuk untuk meneruskan.
-      </p>
+      <p id="loginStatus" role="status" aria-live="polite"></p>
     </section>
 
-    <section id="studentPanel" hidden>
-      <h2>Selamat Datang</h2>
-      <p id="namaPelajar"></p>
-      <p id="maklumatPelajar"></p>
-      
-<p id="statusPelajar" role="status"></p>
+    <!-- DASHBOARD -->
+    <section id="dashboardPanel" class="hidden">
+      <div class="panel dashboard-heading">
+        <div>
+          <h2>Dashboard Pensyarah</h2>
+          <p id="namaPensyarah">Pensyarah</p>
+        </div>
+        <button id="logoutButton" type="button" class="secondary">
+          Log Keluar
+        </button>
+      </div>
 
-<hr>
+      <p id="dashboardStatus" role="status" aria-live="polite"></p>
 
-<section id="subjekPanel">
-  <h2>Subjek Saya</h2>
-  <p id="statusSubjek" role="status">
-    Senarai subjek akan dipaparkan di sini.
-  </p>
-  <div id="senaraiSubjek"></div>
-  <p id="statusKuiz" role="status"></p>
-<div id="senaraiKuiz"></div>
-  <p id="statusSoalan" role="status"></p>
-<div id="senaraiSoalan"></div>
-</section>
+      <!-- RINGKASAN -->
+      <section class="stats-grid" aria-label="Ringkasan keputusan">
+        <article class="stat-card">
+          <h3>Jumlah Pelajar</h3>
+          <p id="jumlahPelajar">0</p>
+        </article>
 
-<button id="logoutButton" type="button">Log Keluar</button>
+        <article class="stat-card">
+          <h3>Purata Markah</h3>
+          <p id="purataMarkah">0%</p>
+        </article>
 
+        <article class="stat-card">
+          <h3>Kadar Lulus</h3>
+          <p id="kadarLulus">0%</p>
+        </article>
+
+        <article class="stat-card">
+          <h3>Rekod Keputusan</h3>
+          <p id="jumlahRekod">0</p>
+        </article>
+      </section>
+
+      <!-- CARIAN DAN PENAPIS -->
+      <section class="panel">
+        <h2>Carian Keputusan</h2>
+
+        <div class="filter-grid">
+          <div>
+            <label for="carian">Nama atau nombor pelajar</label>
+            <input
+              type="search"
+              id="carian"
+              placeholder="Taip nama atau nombor pelajar"
+            >
+          </div>
+
+          <div>
+            <label for="filterKelas">Kelas</label>
+            <select id="filterKelas">
+              <option value="">Semua kelas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterPentaksiran">Pentaksiran</label>
+            <select id="filterPentaksiran">
+              <option value="">Semua pentaksiran</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="button" id="resetFilter" class="secondary">
+          Reset Penapis
+        </button>
+      </section>
+
+      <!-- JADUAL KEPUTUSAN -->
+      <section class="panel">
+        <h2>Senarai Keputusan Pelajar</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bil.</th>
+                <th>No. Pelajar</th>
+                <th>Nama</th>
+                <th>Kelas</th>
+                <th>Pentaksiran</th>
+                <th>Markah</th>
+                <th>Peratus</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="jadualKeputusan">
+              <tr>
+                <td colspan="8">Log masuk untuk melihat keputusan.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="statusKeputusan" role="status" aria-live="polite"></p>
+      </section>
     </section>
   </main>
 
-  <footer>
-    <p>KVDSMZ · ASAS Portal Pentaksiran</p>
+  <footer class="footer">
+    <p>ASAS Portal Pentaksiran KVDSMZ V2</p>
   </footer>
 
   <script src="script.js"></script>
