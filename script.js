@@ -243,11 +243,86 @@ hasil.subjek.forEach(function (subjek) {
             pilihan.appendChild(label);
             pilihan.appendChild(document.createElement("br"));
           });
-
+        
           kadSoalan.appendChild(tajukSoalan);
           kadSoalan.appendChild(pilihan);
           senaraiSoalan.appendChild(kadSoalan);
+
         });
+        
+        // Butang hantar jawapan
+        const butangHantar = document.createElement("button");
+        butangHantar.type = "button";
+        butangHantar.textContent = "Hantar Jawapan";
+
+        butangHantar.addEventListener("click", async function () {
+          const token = sessionStorage.getItem(KUNCI_SESI);
+          const jawapan = [];
+
+          hasilSoalan.soalan.forEach(function (soalan) {
+            const dipilih = document.querySelector(
+              'input[name="jawapan_' + soalan.kodSoalan + '"]:checked'
+            );
+
+            jawapan.push({
+              kodSoalan: soalan.kodSoalan,
+              jawapan: dipilih ? dipilih.value : ""
+            });
+          });
+
+          const belumJawab = jawapan.filter(function (item) {
+            return item.jawapan === "";
+          });
+
+          if (belumJawab.length > 0) {
+            statusSoalan.textContent =
+              "Sila jawab semua soalan dahulu. Belum dijawab: " +
+              belumJawab.length;
+            return;
+          }
+
+          const sahkan = confirm(
+            "Pastikan semua jawapan betul. Hantar jawapan sekarang?"
+          );
+
+          if (!sahkan) return;
+
+          butangHantar.disabled = true;
+          statusSoalan.textContent = "Sedang menghantar jawapan...";
+
+          try {
+            const hasil = await panggilAPI({
+              tindakan: "hantarJawapan",
+              kodPentaksiran: kuiz.kodPentaksiran,
+              jawapan: jawapan,
+              tokenSesi: token
+            });
+
+            if (!hasil.berjaya) {
+              throw new Error(
+                hasil.mesej || "Jawapan gagal dihantar."
+              );
+            }
+
+            const keputusan = hasil.keputusan;
+
+            statusSoalan.textContent =
+              "Jawapan berjaya dihantar! Markah: " +
+              keputusan.markah + "/" + keputusan.markahPenuh +
+              " (" + keputusan.peratus + "%). " +
+              "Status: " + keputusan.statusPencapaian;
+
+            butangHantar.remove();
+
+          } catch (ralat) {
+            statusSoalan.textContent =
+              "Penghantaran gagal: " + ralat.message;
+            butangHantar.disabled = false;
+          }
+        });
+
+        senaraiSoalan.appendChild(butangHantar);
+
       })
       .catch(function (ralat) {
         statusSoalan.textContent =
