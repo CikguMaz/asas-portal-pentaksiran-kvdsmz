@@ -5,9 +5,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#12305a">
+  <meta name="description" content="Dashboard Pensyarah ASAS Portal Pentaksiran KVDSMZ">
   <title>Dashboard Pensyarah | ASAS KVDSMZ</title>
   <link rel="stylesheet" href="style.css">
+
+  <!-- Pastikan dashboard tersembunyi sebelum JavaScript dijalankan -->
+  <style>
+    [hidden],
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
+
 <body>
   <header class="header">
     <div class="container">
@@ -18,18 +28,21 @@
   </header>
 
   <main class="container">
+
     <!-- LOGIN PENSYARAH -->
     <section id="loginPanel" class="panel">
       <h2>Log Masuk Pensyarah</h2>
       <p>Masukkan ID pensyarah dan PIN yang telah didaftarkan.</p>
 
-      <form id="loginForm">
+      <form id="loginForm" autocomplete="on">
         <label for="idPensyarah">ID Pensyarah</label>
         <input
           type="text"
           id="idPensyarah"
           name="idPensyarah"
+          placeholder="Contoh: GURU001"
           autocomplete="username"
+          autocapitalize="characters"
           required
         >
 
@@ -38,7 +51,11 @@
           type="password"
           id="pinPensyarah"
           name="pinPensyarah"
+          placeholder="Masukkan PIN 6 digit"
           inputmode="numeric"
+          pattern="[0-9]{6}"
+          minlength="6"
+          maxlength="6"
           autocomplete="current-password"
           required
         >
@@ -48,25 +65,43 @@
         </button>
       </form>
 
-      <p id="loginStatus" role="status" aria-live="polite"></p>
+      <p
+        id="loginStatus"
+        role="status"
+        aria-live="polite"
+      ></p>
     </section>
 
-    <!-- DASHBOARD -->
-    <section id="dashboardPanel" class="hidden">
+    <!-- DASHBOARD PENSYARAH: DISEMBUNYIKAN SEBELUM LOGIN -->
+    <section id="dashboardPanel" class="hidden" hidden>
+
+      <!-- TAJUK DAN LOG KELUAR -->
       <div class="panel dashboard-heading">
         <div>
           <h2>Dashboard Pensyarah</h2>
           <p id="namaPensyarah">Pensyarah</p>
         </div>
-        <button id="logoutButton" type="button" class="secondary">
+
+        <button
+          id="logoutButton"
+          type="button"
+          class="secondary"
+        >
           Log Keluar
         </button>
       </div>
 
-      <p id="dashboardStatus" role="status" aria-live="polite"></p>
+      <p
+        id="dashboardStatus"
+        role="status"
+        aria-live="polite"
+      ></p>
 
-      <!-- RINGKASAN -->
-      <section class="stats-grid" aria-label="Ringkasan keputusan">
+      <!-- RINGKASAN KEPUTUSAN -->
+      <section
+        class="stats-grid"
+        aria-label="Ringkasan keputusan"
+      >
         <article class="stat-card">
           <h3>Jumlah Pelajar</h3>
           <p id="jumlahPelajar">0</p>
@@ -93,31 +128,44 @@
         <h2>Carian Keputusan</h2>
 
         <div class="filter-grid">
+
           <div>
-            <label for="carian">Nama atau nombor pelajar</label>
+            <label for="carian">
+              Nama atau nombor pelajar
+            </label>
             <input
               type="search"
               id="carian"
+              name="carian"
               placeholder="Taip nama atau nombor pelajar"
+              autocomplete="off"
             >
           </div>
 
           <div>
             <label for="filterKelas">Kelas</label>
-            <select id="filterKelas">
+            <select id="filterKelas" name="filterKelas">
               <option value="">Semua kelas</option>
             </select>
           </div>
 
           <div>
             <label for="filterPentaksiran">Pentaksiran</label>
-            <select id="filterPentaksiran">
+            <select
+              id="filterPentaksiran"
+              name="filterPentaksiran"
+            >
               <option value="">Semua pentaksiran</option>
             </select>
           </div>
+
         </div>
 
-        <button type="button" id="resetFilter" class="secondary">
+        <button
+          type="button"
+          id="resetFilter"
+          class="secondary"
+        >
           Reset Penapis
         </button>
       </section>
@@ -125,34 +173,46 @@
       <!-- JADUAL KEPUTUSAN -->
       <section class="panel">
         <h2>Senarai Keputusan Pelajar</h2>
+
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Bil.</th>
-                <th>No. Pelajar</th>
-                <th>Nama</th>
-                <th>Kelas</th>
-                <th>Pentaksiran</th>
-                <th>Markah</th>
-                <th>Peratus</th>
-                <th>Status</th>
+                <th scope="col">Bil.</th>
+                <th scope="col">No. Pelajar</th>
+                <th scope="col">Nama</th>
+                <th scope="col">Kelas</th>
+                <th scope="col">Pentaksiran</th>
+                <th scope="col">Markah</th>
+                <th scope="col">Peratus</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
+
             <tbody id="jadualKeputusan">
               <tr>
-                <td colspan="8">Log masuk untuk melihat keputusan.</td>
+                <td colspan="8">
+                  Log masuk untuk melihat keputusan.
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p id="statusKeputusan" role="status" aria-live="polite"></p>
+
+        <p
+          id="statusKeputusan"
+          role="status"
+          aria-live="polite"
+        ></p>
       </section>
+
     </section>
   </main>
 
   <footer class="footer">
-    <p>ASAS Portal Pentaksiran KVDSMZ V2</p>
+    <div class="container">
+      <p>ASAS Portal Pentaksiran KVDSMZ V2</p>
+    </div>
   </footer>
 
   <script src="script.js"></script>
