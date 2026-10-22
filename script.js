@@ -1,14 +1,19 @@
 
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
 
-const KUNCI_SESI = "ASAS_V2_TOKEN_SESI";
+const KUNCI_SESI_PENSYARAH = "ASAS_V2_TOKEN_PENSYARAH";
 
 const loginPanel = document.getElementById("loginPanel");
-const studentPanel = document.getElementById("studentPanel");
+const dashboardPanel = document.getElementById("dashboardPanel");
 const loginForm = document.getElementById("loginForm");
 const loginButton = document.getElementById("loginButton");
-const statusElement = document.getElementById("status");
+const loginStatus = document.getElementById("loginStatus");
+const dashboardStatus = document.getElementById("dashboardStatus");
+
+let semuaKeputusan = [];
+let kelasTersedia = [];
+let pentaksiranTersedia = [];
+let namaPensyarah = "";
 
 async function panggilAPI(data) {
   const respons = await fetch(API_URL, {
@@ -21,403 +26,306 @@ async function panggilAPI(data) {
   });
 
   if (!respons.ok) {
-    throw new Error("Server memulangkan ralat HTTP.");
+    throw new Error("Pelayan memulangkan ralat HTTP.");
   }
 
-  return await respons.json();
+  return respons.json();
 }
 
 // ==============================
-// LOGIN PELAJAR
+// LOGIN PENSYARAH
 // ==============================
 
 loginForm.addEventListener("submit", async function (event) {
   event.preventDefault();
 
-  const noPelajar = document
-    .getElementById("noPelajar")
+  const idPensyarah = document
+    .getElementById("idPensyarah")
     .value.trim();
 
-  const pin = document.getElementById("pin").value;
+  const pin = document.getElementById("pinPensyarah").value;
 
-  if (!/^\d{6}$/.test(pin)) {
-    statusElement.textContent = "PIN mestilah tepat 6 digit.";
+  if (!idPensyarah || !/^\d{6}$/.test(pin)) {
+    loginStatus.textContent =
+      "Masukkan ID pensyarah dan PIN yang mengandungi 6 digit.";
     return;
   }
 
   loginButton.disabled = true;
-  statusElement.textContent = "Sedang mengesahkan login...";
+  loginStatus.textContent = "Sedang mengesahkan login...";
 
   try {
     const hasil = await panggilAPI({
-      tindakan: "login",
-      noPelajar: noPelajar,
+      tindakan: "loginPensyarah",
+      idPensyarah: idPensyarah,
       pin: pin
     });
 
-    if (!hasil.berjaya || !hasil.tokenSesi || !hasil.pelajar) {
-      statusElement.textContent =
+    if (!hasil.berjaya || !hasil.tokenPensyarah) {
+      loginStatus.textContent =
         hasil.mesej || "Login tidak berjaya.";
       return;
     }
 
-    sessionStorage.setItem(KUNCI_SESI, hasil.tokenSesi);
+    sessionStorage.setItem(
+      KUNCI_SESI_PENSYARAH,
+      hasil.tokenPensyarah
+    );
 
-    paparProfilPelajar(hasil.pelajar);
+    namaPensyarah =
+      hasil.pensyarah?.nama ||
+      hasil.pensyarah?.idPensyarah ||
+      "Pensyarah";
+
     loginForm.reset();
-    statusElement.textContent = "Login berjaya.";
+    loginPanel.hidden = true;
+    dashboardPanel.hidden = false;
 
-    await muatkanSubjek();
+    document.getElementById("namaPensyarah").textContent =
+      "Log masuk sebagai " + namaPensyarah;
+
+    loginStatus.textContent = "";
+    await muatDashboardPensyarah();
 
   } catch (ralat) {
-    console.error("Ralat login:", ralat);
-    statusElement.textContent =
-      "Sambungan login gagal. Cuba lagi dan semak jika terdapat ralat CORS.";
+    console.error(ralat);
+    loginStatus.textContent =
+      "Login gagal disambungkan. Semak URL Apps Script dan deployment.";
   } finally {
     loginButton.disabled = false;
   }
 });
 
 // ==============================
-// PAPAR PROFIL PELAJAR
+// MUAT DATA DASHBOARD
 // ==============================
 
-function paparProfilPelajar(pelajar) {
-  loginPanel.hidden = true;
-  studentPanel.hidden = false;
+async function muatDashboardPensyarah() {
+  const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
 
-  document.getElementById("namaPelajar").textContent =
-    pelajar.nama || "";
+  if (!token) {
+    tamatkanSesiPensyarah("Sila log masuk semula.");
+    return;
+  }
 
-  document.getElementById("maklumatPelajar").textContent =
-    "No. pelajar: " + (pelajar.noPelajar || "") +
-    " | Kelas: " + (pelajar.kelas || "") +
-    " | Semester: " + (pelajar.semester || "");
-
-  document.getElementById("statusPelajar").textContent =
-    "Login berjaya. Sesi pelajar telah diwujudkan.";
-}
-
-// ==============================
-// MUATKAN SENARAI SUBJEK
-// ==============================
-
-async function muatkanSubjek() {
-  const statusSubjek = document.getElementById("statusSubjek");
-  const senaraiSubjek = document.getElementById("senaraiSubjek");
-  const tokenSesi = sessionStorage.getItem(KUNCI_SESI);
-
-  senaraiSubjek.replaceChildren();
-  statusSubjek.textContent = "Sedang memuatkan subjek...";
+  dashboardStatus.textContent = "Sedang memuatkan keputusan...";
 
   try {
     const hasil = await panggilAPI({
-      tindakan: "senaraiSubjek",
-      tokenSesi: tokenSesi
+      tindakan: "dashboardPensyarah",
+      tokenPensyarah: token,
+      kelas: document.getElementById("filterKelas").value,
+      kodPentaksiran:
+        document.getElementById("filterPentaksiran").value,
+      carian: document.getElementById("carian").value.trim()
     });
 
-    if (!hasil.berjaya || !Array.isArray(hasil.subjek)) {
-      statusSubjek.textContent =
-        hasil.mesej || "Subjek tidak dapat dimuatkan.";
+    if (!hasil.berjaya) {
+      tamatkanSesiPensyarah(
+        hasil.mesej || "Sesi tamat. Sila log masuk semula."
+      );
       return;
     }
 
-    if (hasil.subjek.length === 0) {
-      statusSubjek.textContent =
-        "Tiada subjek aktif untuk semester dan program anda.";
-      return;
-    }
+    const ringkasan = hasil.ringkasan || {};
 
-    statusSubjek.textContent =
-      "Jumlah subjek: " + hasil.subjek.length;
+    document.getElementById("jumlahPelajar").textContent =
+      ringkasan.jumlahPelajar ?? 0;
 
-    hasil.subjek.forEach(function (subjek) {
-      const kad = document.createElement("div");
-      const tajuk = document.createElement("h3");
-      const kod = document.createElement("p");
-      const butang = document.createElement("button");
+    document.getElementById("purataMarkah").textContent =
+      (ringkasan.purataMarkah ?? 0) + "%";
 
-      tajuk.textContent = subjek.namaKursus;
-      kod.textContent = "Kod kursus: " + subjek.kodKursus;
+    document.getElementById("kadarLulus").textContent =
+      (ringkasan.kadarLulus ?? 0) + "%";
 
-      butang.type = "button";
-      butang.textContent = "Lihat Kuiz";
+    document.getElementById("jumlahRekod").textContent =
+      ringkasan.jumlahRekod ?? 0;
 
-      butang.addEventListener("click", async function () {
-        const statusKuiz = document.getElementById("statusKuiz");
-        const senaraiKuiz = document.getElementById("senaraiKuiz");
-        const token = sessionStorage.getItem(KUNCI_SESI);
+    kelasTersedia = hasil.kelas || [];
+    pentaksiranTersedia = hasil.pentaksiran || [];
+    semuaKeputusan = hasil.keputusan || [];
 
-        senaraiKuiz.replaceChildren();
-        document.getElementById("senaraiSoalan").replaceChildren();
-        document.getElementById("statusSoalan").textContent = "";
-        statusKuiz.textContent = "Sedang memuatkan kuiz...";
-        butang.disabled = true;
+    kemasKiniPilihan(
+      "filterKelas",
+      kelasTersedia,
+      "Semua kelas"
+    );
 
-        try {
-          const hasilKuiz = await panggilAPI({
-            tindakan: "senaraiKuizSubjek",
-            kodKursus: subjek.kodKursus,
-            tokenSesi: token
-          });
+    kemasKiniPilihan(
+      "filterPentaksiran",
+      pentaksiranTersedia,
+      "Semua pentaksiran"
+    );
 
-          if (!hasilKuiz.berjaya || !Array.isArray(hasilKuiz.kuiz)) {
-            statusKuiz.textContent =
-              hasilKuiz.mesej || "Senarai kuiz gagal dimuatkan.";
-            return;
-          }
+    paparKeputusan(semuaKeputusan);
 
-          if (hasilKuiz.kuiz.length === 0) {
-            statusKuiz.textContent =
-              "Tiada kuiz aktif untuk subjek ini.";
-            return;
-          }
-
-          statusKuiz.textContent =
-            "Jumlah kuiz aktif: " + hasilKuiz.kuiz.length;
-
-          hasilKuiz.kuiz.forEach(function (kuiz) {
-            const kadKuiz = document.createElement("div");
-            const tajukKuiz = document.createElement("h4");
-            const maklumatKuiz = document.createElement("p");
-            const butangMula = document.createElement("button");
-
-            tajukKuiz.textContent = kuiz.tajuk;
-
-            maklumatKuiz.textContent =
-              "Kod: " + kuiz.kodPentaksiran +
-              " | Markah penuh: " + kuiz.markahPenuh +
-              " | Tempoh: " + kuiz.tempohMinit + " minit";
-
-            butangMula.type = "button";
-            butangMula.textContent = "Mula Kuiz";
-
-            // ==============================
-            // MULA KUIZ DAN PAPAR SOALAN
-            // ==============================
-
-            butangMula.addEventListener("click", async function () {
-              const tokenKuiz = sessionStorage.getItem(KUNCI_SESI);
-              const statusSoalan = document.getElementById("statusSoalan");
-              const senaraiSoalan = document.getElementById("senaraiSoalan");
-
-              statusSoalan.textContent = "Sedang memuatkan soalan...";
-              senaraiSoalan.replaceChildren();
-              butangMula.disabled = true;
-
-              try {
-                const hasilSoalan = await panggilAPI({
-                  tindakan: "soalanKuiz",
-                  kodPentaksiran: kuiz.kodPentaksiran,
-                  tokenSesi: tokenKuiz
-                });
-
-                if (!hasilSoalan.berjaya) {
-                  throw new Error(
-                    hasilSoalan.mesej || "Soalan gagal dimuatkan."
-                  );
-                }
-
-                if (
-                  !Array.isArray(hasilSoalan.soalan) ||
-                  hasilSoalan.soalan.length === 0
-                ) {
-                  statusSoalan.textContent =
-                    "Tiada soalan tersedia untuk kuiz ini.";
-                  return;
-                }
-
-                statusSoalan.textContent =
-                  "Jumlah soalan: " + hasilSoalan.soalan.length;
-
-                hasilSoalan.soalan.forEach(function (soalan, indeks) {
-                  const kadSoalan = document.createElement("div");
-                  const tajukSoalan = document.createElement("h4");
-                  const pilihan = document.createElement("div");
-
-                  tajukSoalan.textContent =
-                    (indeks + 1) + ". " + soalan.soalan;
-
-                  const pilihanJawapan = [
-                    ["A", soalan.pilihanA],
-                    ["B", soalan.pilihanB],
-                    ["C", soalan.pilihanC],
-                    ["D", soalan.pilihanD]
-                  ];
-
-                  pilihanJawapan.forEach(function (item) {
-                    const label = document.createElement("label");
-                    const radio = document.createElement("input");
-
-                    radio.type = "radio";
-                    radio.name = "jawapan_" + soalan.kodSoalan;
-                    radio.value = item[0];
-
-                    label.appendChild(radio);
-                    label.appendChild(
-                      document.createTextNode(
-                        " " + item[0] + ". " + (item[1] || "")
-                      )
-                    );
-
-                    pilihan.appendChild(label);
-                    pilihan.appendChild(document.createElement("br"));
-                  });
-
-                  kadSoalan.appendChild(tajukSoalan);
-                  kadSoalan.appendChild(pilihan);
-                  senaraiSoalan.appendChild(kadSoalan);
-                });
-
-                // ==============================
-                // BUTANG HANTAR JAWAPAN
-                // ==============================
-
-                const butangHantar = document.createElement("button");
-                butangHantar.type = "button";
-                butangHantar.textContent = "Hantar Jawapan";
-
-                butangHantar.addEventListener("click", async function () {
-                  const token = sessionStorage.getItem(KUNCI_SESI);
-                  const jawapan = [];
-
-                  hasilSoalan.soalan.forEach(function (soalan) {
-                    const dipilih = document.querySelector(
-                      'input[name="jawapan_' +
-                      soalan.kodSoalan +
-                      '"]:checked'
-                    );
-
-                    jawapan.push({
-                      kodSoalan: soalan.kodSoalan,
-                      jawapan: dipilih ? dipilih.value : ""
-                    });
-                  });
-
-                  const belumJawab = jawapan.filter(function (item) {
-                    return item.jawapan === "";
-                  });
-
-                  if (belumJawab.length > 0) {
-                    statusSoalan.textContent =
-                      "Sila jawab semua soalan dahulu. Belum dijawab: " +
-                      belumJawab.length;
-                    return;
-                  }
-
-                  const sahkan = confirm(
-                    "Pastikan semua jawapan betul. Hantar jawapan sekarang?"
-                  );
-
-                  if (!sahkan) return;
-
-                  butangHantar.disabled = true;
-                  statusSoalan.textContent =
-                    "Sedang menghantar jawapan...";
-
-                  try {
-                    const hasil = await panggilAPI({
-                      tindakan: "hantarJawapan",
-                      kodPentaksiran: kuiz.kodPentaksiran,
-                      jawapan: jawapan,
-                      tokenSesi: token
-                    });
-
-                    if (!hasil.berjaya) {
-                      throw new Error(
-                        hasil.mesej || "Jawapan gagal dihantar."
-                      );
-                    }
-
-                    const keputusan = hasil.keputusan;
-
-                    statusSoalan.textContent =
-                      "Jawapan berjaya dihantar! Markah: " +
-                      keputusan.markah + "/" + keputusan.markahPenuh +
-                      " (" + keputusan.peratus + "%). " +
-                      "Status: " + keputusan.statusPencapaian;
-
-                    butangHantar.remove();
-
-                  } catch (ralat) {
-                    statusSoalan.textContent =
-                      "Penghantaran gagal: " + ralat.message;
-                    butangHantar.disabled = false;
-                  }
-                });
-
-                senaraiSoalan.appendChild(butangHantar);
-
-              } catch (ralat) {
-                console.error("Ralat memuatkan soalan:", ralat);
-                statusSoalan.textContent =
-                  "Ralat: " + ralat.message;
-              } finally {
-                butangMula.disabled = false;
-              }
-            });
-
-            kadKuiz.appendChild(tajukKuiz);
-            kadKuiz.appendChild(maklumatKuiz);
-            kadKuiz.appendChild(butangMula);
-            senaraiKuiz.appendChild(kadKuiz);
-          });
-
-        } catch (ralat) {
-          console.error("Ralat memuatkan kuiz:", ralat);
-          statusKuiz.textContent =
-            "Kuiz gagal dimuatkan. Cuba lagi.";
-        } finally {
-          butang.disabled = false;
-        }
-      });
-
-      kad.appendChild(tajuk);
-      kad.appendChild(kod);
-      kad.appendChild(butang);
-      senaraiSubjek.appendChild(kad);
-    });
+    dashboardStatus.textContent =
+      hasil.mesej ||
+      "Keputusan berjaya dimuatkan: " +
+      semuaKeputusan.length + " rekod.";
 
   } catch (ralat) {
-    console.error("Ralat memuatkan subjek:", ralat);
-    statusSubjek.textContent =
-      "Subjek gagal dimuatkan. Sila cuba log masuk semula.";
+    console.error(ralat);
+    dashboardStatus.textContent =
+      "Gagal memuatkan dashboard. Semak sambungan dan URL API.";
   }
 }
 
 // ==============================
-// LOGOUT
+// PILIHAN KELAS DAN PENTAKSIRAN
 // ==============================
 
-document
-  .getElementById("logoutButton")
-  .addEventListener("click", async function () {
-    const tokenSesi = sessionStorage.getItem(KUNCI_SESI);
+function kemasKiniPilihan(id, senarai, labelSemua) {
+  const elemen = document.getElementById(id);
+  const nilaiSemasa = elemen.value;
 
+  elemen.replaceChildren();
+
+  const pilihanSemua = document.createElement("option");
+  pilihanSemua.value = "";
+  pilihanSemua.textContent = labelSemua;
+  elemen.appendChild(pilihanSemua);
+
+  senarai.forEach(function (nilai) {
+    const pilihan = document.createElement("option");
+    pilihan.value = nilai;
+    pilihan.textContent = nilai;
+    elemen.appendChild(pilihan);
+  });
+
+  if (senarai.includes(nilaiSemasa)) {
+    elemen.value = nilaiSemasa;
+  }
+}
+
+// ==============================
+// PAPAR JADUAL KEPUTUSAN
+// ==============================
+
+function paparKeputusan(senarai) {
+  const tbody = document.getElementById("jadualKeputusan");
+  tbody.replaceChildren();
+
+  if (!senarai.length) {
+    const baris = document.createElement("tr");
+    const sel = document.createElement("td");
+
+    sel.colSpan = 8;
+    sel.textContent = "Tiada keputusan ditemui.";
+
+    baris.appendChild(sel);
+    tbody.appendChild(baris);
+    return;
+  }
+
+  senarai.forEach(function (rekod, indeks) {
+    const baris = document.createElement("tr");
+
+    const nilai = [
+      indeks + 1,
+      rekod.noPelajar,
+      rekod.nama,
+      rekod.kelas,
+      rekod.kodPentaksiran,
+      (rekod.markah ?? 0) + " / " + (rekod.markahPenuh ?? 0),
+      (rekod.peratus ?? 0) + "%",
+      rekod.status || ""
+    ];
+
+    nilai.forEach(function (teks) {
+      const sel = document.createElement("td");
+      sel.textContent = String(teks);
+      baris.appendChild(sel);
+    });
+
+    tbody.appendChild(baris);
+  });
+}
+
+// ==============================
+// PENAPIS KEPUTUSAN
+// ==============================
+
+let pemasaCarian;
+
+document.getElementById("carian").addEventListener(
+  "input",
+  function () {
+    clearTimeout(pemasaCarian);
+
+    pemasaCarian = setTimeout(function () {
+      muatDashboardPensyarah();
+    }, 350);
+  }
+);
+
+document.getElementById("filterKelas").addEventListener(
+  "change",
+  muatDashboardPensyarah
+);
+
+document.getElementById("filterPentaksiran").addEventListener(
+  "change",
+  muatDashboardPensyarah
+);
+
+document.getElementById("resetFilter").addEventListener(
+  "click",
+  function () {
+    document.getElementById("carian").value = "";
+    document.getElementById("filterKelas").value = "";
+    document.getElementById("filterPentaksiran").value = "";
+
+    muatDashboardPensyarah();
+  }
+);
+
+// ==============================
+// LOG KELUAR
+// ==============================
+
+document.getElementById("logoutButton").addEventListener(
+  "click",
+  async function () {
+    const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
     this.disabled = true;
 
     try {
-      if (tokenSesi) {
+      if (token) {
         await panggilAPI({
-          tindakan: "logout",
-          tokenSesi: tokenSesi
+          tindakan: "logoutPensyarah",
+          tokenPensyarah: token
         });
       }
 
-      tamatkanPaparanSesi();
+      tamatkanSesiPensyarah("Anda telah log keluar.");
 
     } catch (ralat) {
-      console.error("Ralat logout:", ralat);
-      document.getElementById("statusPelajar").textContent =
-        "Logout belum dapat disahkan oleh server. Cuba lagi.";
+      console.error(ralat);
+      dashboardStatus.textContent =
+        "Log keluar gagal disahkan. Cuba sekali lagi.";
     } finally {
       this.disabled = false;
     }
-  });
+  }
+);
 
-function tamatkanPaparanSesi() {
-  sessionStorage.removeItem(KUNCI_SESI);
-  studentPanel.hidden = true;
+function tamatkanSesiPensyarah(mesej) {
+  sessionStorage.removeItem(KUNCI_SESI_PENSYARAH);
+
+  semuaKeputusan = [];
+  kelasTersedia = [];
+  pentaksiranTersedia = [];
+
+  dashboardPanel.hidden = true;
   loginPanel.hidden = false;
-  statusElement.textContent = "Anda telah log keluar.";
+
+  dashboardStatus.textContent = "";
+  loginStatus.textContent = mesej;
+
+  document.getElementById("jadualKeputusan").replaceChildren();
+  document.getElementById("jumlahPelajar").textContent = "0";
+  document.getElementById("purataMarkah").textContent = "0%";
+  document.getElementById("kadarLulus").textContent = "0%";
+  document.getElementById("jumlahRekod").textContent = "0";
 }
