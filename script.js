@@ -264,7 +264,7 @@ hasil.subjek.forEach(function (subjek) {
 
   senaraiKuiz.appendChild(kadKuiz);
 });
-      });
+    
     } catch (ralat) {
       console.error("Ralat memuatkan kuiz:", ralat);
       statusKuiz.textContent =
