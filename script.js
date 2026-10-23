@@ -1,4 +1,3 @@
-
 const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
 const KUNCI_SESI_PENSYARAH = "ASAS_V2_TOKEN_PENSYARAH";
 
@@ -53,9 +52,7 @@ function paparMesejDashboard(mesej) {
   if (status) status.textContent = mesej || "";
 }
 
-// ==============================
 // LOGIN PENSYARAH
-// ==============================
 
 async function kendaliLogin(event) {
   event.preventDefault();
@@ -80,12 +77,6 @@ async function kendaliLogin(event) {
       pin
     });
 
-    console.log("Respons login pensyarah:", {
-      berjaya: hasil?.berjaya,
-      adaToken: Boolean(hasil?.tokenPensyarah),
-      mesej: hasil?.mesej
-    });
-
     if (!hasil?.berjaya || !hasil?.tokenPensyarah) {
       paparMesejLogin(hasil?.mesej || "Login tidak berjaya.");
       return;
@@ -101,7 +92,7 @@ async function kendaliLogin(event) {
       hasil.pensyarah?.idPensyarah ||
       idPensyarah;
 
-    if (borang) borang.reset();
+    borang?.reset();
 
     $("loginPanel").hidden = true;
     $("loginPanel").classList.add("hidden");
@@ -113,9 +104,10 @@ async function kendaliLogin(event) {
       "Log masuk sebagai " + namaPensyarah;
 
     paparMesejLogin("");
-    paparMesejDashboard("Login berjaya. Sedang memuatkan dashboard...");
+    paparMesejDashboard("Login berjaya. Memuatkan dashboard...");
 
     await muatDashboardPensyarah();
+    await muatJawapanSubjektif();
 
   } catch (ralat) {
     console.error("Ralat login:", ralat);
@@ -127,9 +119,7 @@ async function kendaliLogin(event) {
   }
 }
 
-// ==============================
-// MUAT DATA DASHBOARD
-// ==============================
+// DASHBOARD
 
 async function muatDashboardPensyarah() {
   const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
@@ -150,17 +140,7 @@ async function muatDashboardPensyarah() {
       carian: $("carian")?.value.trim() || ""
     });
 
-    console.log("Respons dashboard:", {
-      berjaya: hasil?.berjaya,
-      mesej: hasil?.mesej,
-      bilanganKeputusan: Array.isArray(hasil?.keputusan)
-        ? hasil.keputusan.length
-        : 0
-    });
-
     if (!hasil?.berjaya) {
-      // Jangan buang sesi secara automatik untuk semua jenis ralat.
-      // Paparkan mesej supaya punca dapat dikenal pasti.
       paparMesejDashboard(
         hasil?.mesej || "Dashboard gagal dimuatkan."
       );
@@ -181,15 +161,24 @@ async function muatDashboardPensyarah() {
     $("jumlahRekod").textContent =
       ringkasan.jumlahRekod ?? 0;
 
-    kelasTersedia = Array.isArray(hasil.kelas) ? hasil.kelas : [];
+    kelasTersedia = Array.isArray(hasil.kelas)
+      ? hasil.kelas
+      : [];
+
     pentaksiranTersedia = Array.isArray(hasil.pentaksiran)
       ? hasil.pentaksiran
       : [];
+
     semuaKeputusan = Array.isArray(hasil.keputusan)
       ? hasil.keputusan
       : [];
 
-    kemasKiniPilihan("filterKelas", kelasTersedia, "Semua kelas");
+    kemasKiniPilihan(
+      "filterKelas",
+      kelasTersedia,
+      "Semua kelas"
+    );
+
     kemasKiniPilihan(
       "filterPentaksiran",
       pentaksiranTersedia,
@@ -205,17 +194,15 @@ async function muatDashboardPensyarah() {
     );
 
   } catch (ralat) {
-    console.error("Ralat memuatkan dashboard:", ralat);
+    console.error("Ralat dashboard:", ralat);
+
     paparMesejDashboard(
-      "Login berjaya tetapi dashboard gagal dimuatkan. " +
-      "Semak respons API dan deployment."
+      "Dashboard gagal dimuatkan: " + ralat.message
     );
   }
 }
 
-// ==============================
-// PILIHAN KELAS DAN PENTAKSIRAN
-// ==============================
+// PILIHAN PENAPIS
 
 function kemasKiniPilihan(id, senarai, labelSemua) {
   const elemen = $(id);
@@ -241,9 +228,7 @@ function kemasKiniPilihan(id, senarai, labelSemua) {
   }
 }
 
-// ==============================
-// PAPAR JADUAL KEPUTUSAN
-// ==============================
+// PAPAR KEPUTUSAN
 
 function paparKeputusan(senarai) {
   const tbody = $("jadualKeputusan");
@@ -254,8 +239,10 @@ function paparKeputusan(senarai) {
   if (!senarai.length) {
     const baris = document.createElement("tr");
     const sel = document.createElement("td");
+
     sel.colSpan = 8;
     sel.textContent = "Tiada keputusan ditemui.";
+
     baris.appendChild(sel);
     tbody.appendChild(baris);
     return;
@@ -270,7 +257,8 @@ function paparKeputusan(senarai) {
       rekod.nama ?? "",
       rekod.kelas ?? "",
       rekod.kodPentaksiran ?? "",
-      (rekod.markah ?? 0) + " / " + (rekod.markahPenuh ?? 0),
+      (rekod.markah ?? 0) + " / " +
+        (rekod.markahPenuh ?? 0),
       (rekod.peratus ?? 0) + "%",
       rekod.status ?? ""
     ];
@@ -285,14 +273,16 @@ function paparKeputusan(senarai) {
   });
 }
 
-// ==============================
-// PENAPIS KEPUTUSAN
-// ==============================
+// CARIAN DAN PENAPIS
 
 function tetapkanPenapis() {
   $("carian")?.addEventListener("input", function () {
     clearTimeout(pemasaCarian);
-    pemasaCarian = setTimeout(muatDashboardPensyarah, 350);
+
+    pemasaCarian = setTimeout(
+      muatDashboardPensyarah,
+      350
+    );
   });
 
   $("filterKelas")?.addEventListener(
@@ -309,13 +299,12 @@ function tetapkanPenapis() {
     $("carian").value = "";
     $("filterKelas").value = "";
     $("filterPentaksiran").value = "";
+
     muatDashboardPensyarah();
   });
 }
 
-// ==============================
 // LOG KELUAR
-// ==============================
 
 async function kendaliLogout() {
   const butang = $("logoutButton");
@@ -335,10 +324,10 @@ async function kendaliLogout() {
 
   } catch (ralat) {
     console.error("Ralat logout:", ralat);
-    paparMesejDashboard(
-      "Permintaan log keluar gagal. Sesi tempatan akan ditamatkan."
+
+    tamatkanSesiPensyarah(
+      "Sesi pada peranti ini telah ditamatkan."
     );
-    tamatkanSesiPensyarah("Anda telah log keluar pada peranti ini.");
   } finally {
     if (butang) butang.disabled = false;
   }
@@ -366,12 +355,28 @@ function tamatkanSesiPensyarah(mesej) {
 
   if ($("jadualKeputusan")) {
     $("jadualKeputusan").replaceChildren();
+
     const baris = document.createElement("tr");
     const sel = document.createElement("td");
+
     sel.colSpan = 8;
     sel.textContent = "Log masuk untuk melihat keputusan.";
+
     baris.appendChild(sel);
     $("jadualKeputusan").appendChild(baris);
+  }
+
+  if ($("jadualSubjektif")) {
+    $("jadualSubjektif").replaceChildren();
+
+    const baris = document.createElement("tr");
+    const sel = document.createElement("td");
+
+    sel.colSpan = 7;
+    sel.textContent = "Log masuk untuk melihat jawapan subjektif.";
+
+    baris.appendChild(sel);
+    $("jadualSubjektif").appendChild(baris);
   }
 
   if ($("jumlahPelajar")) $("jumlahPelajar").textContent = "0";
@@ -380,9 +385,201 @@ function tamatkanSesiPensyarah(mesej) {
   if ($("jumlahRekod")) $("jumlahRekod").textContent = "0";
 }
 
-// ==============================
+// SEMAKAN SUBJEKTIF
+
+async function muatJawapanSubjektif() {
+  const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
+  const status = $("statusSubjektifMesej");
+  const tbody = $("jadualSubjektif");
+
+  if (!token) {
+    if (status) status.textContent = "Sila log masuk semula.";
+    return;
+  }
+
+  if (status) status.textContent = "Sedang memuatkan jawapan...";
+  if (tbody) tbody.replaceChildren();
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "senaraiJawapanSubjektifV2",
+      tokenPensyarah: token,
+      kodPentaksiran: $("filterSubjektif")?.value || "",
+      status: $("statusSubjektif")?.value || "BELUM_DISEMAK"
+    });
+
+    if (!hasil?.berjaya) {
+      throw new Error(
+        hasil?.mesej || "Gagal memuatkan jawapan."
+      );
+    }
+
+    const senarai = Array.isArray(hasil.jawapan)
+      ? hasil.jawapan
+      : [];
+
+    if (!tbody) return;
+
+    if (!senarai.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+
+      td.colSpan = 7;
+      td.textContent =
+        "Tiada jawapan subjektif untuk penapis ini.";
+
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+
+    senarai.forEach((item) => {
+      const tr = document.createElement("tr");
+
+      const buatSel = (teks) => {
+        const td = document.createElement("td");
+        td.textContent = String(teks ?? "");
+        return td;
+      };
+
+      tr.appendChild(
+        buatSel(
+          `${item.namaPelajar || ""} (${item.noPelajar || ""})`
+        )
+      );
+
+      tr.appendChild(buatSel(item.kodPentaksiran));
+      tr.appendChild(buatSel(item.soalan));
+
+      const jawapanTd = buatSel(
+        item.jawapan || "[Tiada jawapan]"
+      );
+
+      jawapanTd.style.whiteSpace = "pre-wrap";
+      jawapanTd.style.minWidth = "220px";
+      tr.appendChild(jawapanTd);
+
+      const markahTd = document.createElement("td");
+      const input = document.createElement("input");
+
+      input.type = "number";
+      input.min = "0";
+      input.max = String(item.markahPenuh ?? 0);
+      input.step = "0.5";
+      input.value = String(item.markahDiperoleh ?? 0);
+      input.style.minWidth = "90px";
+
+      input.setAttribute(
+        "aria-label",
+        "Markah daripada " + (item.markahPenuh ?? 0)
+      );
+
+      markahTd.appendChild(input);
+      markahTd.appendChild(
+        document.createTextNode(
+          " / " + (item.markahPenuh ?? 0)
+        )
+      );
+
+      tr.appendChild(markahTd);
+      tr.appendChild(buatSel(item.statusSemakan));
+
+      const tindakanTd = document.createElement("td");
+      const butang = document.createElement("button");
+
+      butang.type = "button";
+      butang.textContent = "Simpan Markah";
+
+      butang.addEventListener("click", async () => {
+        const markah = Number(input.value);
+        const markahPenuh = Number(item.markahPenuh);
+
+        if (
+          !Number.isFinite(markah) ||
+          markah < 0 ||
+          markah > markahPenuh
+        ) {
+          if (status) {
+            status.textContent =
+              `Markah mesti antara 0 hingga ${markahPenuh}.`;
+          }
+          return;
+        }
+
+        butang.disabled = true;
+
+        if (status) {
+          status.textContent = "Sedang menyimpan markah...";
+        }
+
+        try {
+          const simpan = await panggilAPI({
+            tindakan: "simpanMarkahSubjektifV2",
+            tokenPensyarah: token,
+            payload: {
+              idCubaan: item.idCubaan,
+              kodSoalan: item.kodSoalan,
+              markah
+            }
+          });
+
+          if (!simpan?.berjaya) {
+            throw new Error(
+              simpan?.mesej || "Markah gagal disimpan."
+            );
+          }
+
+          if (status) {
+            status.textContent =
+              simpan.mesej || "Markah berjaya disimpan.";
+          }
+
+          await muatJawapanSubjektif();
+          await muatDashboardPensyarah();
+
+        } catch (ralat) {
+          if (status) {
+            status.textContent =
+              ralat.message || "Markah gagal disimpan.";
+          }
+        } finally {
+          butang.disabled = false;
+        }
+      });
+
+      tindakanTd.appendChild(butang);
+      tr.appendChild(tindakanTd);
+      tbody.appendChild(tr);
+    });
+
+    kemasKiniPilihan(
+      "filterSubjektif",
+      [
+        ...new Set(
+          senarai
+            .map((item) => item.kodPentaksiran)
+            .filter(Boolean)
+        )
+      ],
+      "Semua pentaksiran"
+    );
+
+    if (status) {
+      status.textContent =
+        `Ditemui ${senarai.length} jawapan subjektif.`;
+    }
+
+  } catch (ralat) {
+    console.error("Ralat semakan subjektif:", ralat);
+
+    if (status) {
+      status.textContent =
+        ralat.message ||
+        "Tidak dapat memuatkan jawapan subjektif.";
+    }
+  }
+}
+
 // MULAKAN APLIKASI
-// ==============================
 
 document.addEventListener("DOMContentLoaded", function () {
   paparLoginAwal();
@@ -390,9 +587,23 @@ document.addEventListener("DOMContentLoaded", function () {
   $("loginForm")?.addEventListener("submit", kendaliLogin);
   $("logoutButton")?.addEventListener("click", kendaliLogout);
 
+  $("muatSubjektifButton")?.addEventListener(
+    "click",
+    muatJawapanSubjektif
+  );
+
+  $("statusSubjektif")?.addEventListener(
+    "change",
+    muatJawapanSubjektif
+  );
+
+  $("filterSubjektif")?.addEventListener(
+    "change",
+    muatJawapanSubjektif
+  );
+
   tetapkanPenapis();
 
-  // Jangan pulihkan dashboard menggunakan token lama secara automatik.
-  // Pensyarah perlu log masuk semula untuk mendapatkan sesi yang sah.
+  // Sesi lama tidak dipulihkan secara automatik.
   sessionStorage.removeItem(KUNCI_SESI_PENSYARAH);
 });
