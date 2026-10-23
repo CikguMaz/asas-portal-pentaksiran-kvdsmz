@@ -1,4 +1,18 @@
+// PULIHKAN PAPARAN LOGIN SEMASA HALAMAN DIBUKA
+document.addEventListener("DOMContentLoaded", function () {
+  const loginPanel = document.getElementById("loginPanel");
+  const dashboardPanel = document.getElementById("dashboardPanel");
 
+  if (loginPanel) {
+    loginPanel.hidden = false;
+    loginPanel.classList.remove("hidden");
+  }
+
+  if (dashboardPanel) {
+    dashboardPanel.hidden = true;
+    dashboardPanel.classList.add("hidden");
+  }
+});
 const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
 
 const KUNCI_SESI_PENSYARAH = "ASAS_V2_TOKEN_PENSYARAH";
