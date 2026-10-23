@@ -1,0 +1,510 @@
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12305a">
+  <title>Portal Pelajar | ASAS KVDSMZ</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f5fa;
+      color: #182b43;
+    }
+    header {
+      background: #153d64;
+      color: white;
+      padding: 22px 16px;
+    }
+    header, main, footer { padding-left: max(16px, calc((100% - 1000px)/2)); padding-right: max(16px, calc((100% - 1000px)/2)); }
+    header h1 { margin: 0 0 6px; font-size: 24px; }
+    header p { margin: 0; }
+    main { padding-top: 24px; padding-bottom: 40px; }
+    .panel {
+      background: white;
+      padding: 22px;
+      margin-bottom: 20px;
+      border: 1px solid #dce4ef;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #102f5010;
+    }
+    label { display: block; font-weight: bold; margin: 12px 0 6px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #bdcadd;
+      border-radius: 6px;
+      font: inherit;
+      background: white;
+    }
+    button {
+      padding: 11px 16px;
+      margin: 10px 6px 0 0;
+      border: 0;
+      border-radius: 6px;
+      background: #153d64;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.secondary { background: #e5edf7; color: #153d64; }
+    .card {
+      border: 1px solid #dce4ef;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+    .muted { color: #5c6d82; font-size: 14px; }
+    .status { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .question { margin: 16px 0; padding: 16px; border: 1px solid #dce4ef; border-radius: 8px; }
+    .choice { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; font-weight: normal; }
+    .choice input { width: auto; margin-top: 3px; }
+    [hidden] { display: none !important; }
+    footer { padding-top: 20px; padding-bottom: 20px; color: #66768a; font-size: 13px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>ASAS Portal Pentaksiran KVDSMZ</h1>
+  <p>Portal Pelajar</p>
+</header>
+
+<main>
+  <section class="panel" id="loginPanel">
+    <h2>Log Masuk Pelajar</h2>
+    <p class="muted">Gunakan nombor pelajar dan PIN yang telah didaftarkan.</p>
+    <form id="loginForm">
+      <label for="noPelajar">Nombor pelajar</label>
+      <input id="noPelajar" autocomplete="username" required>
+
+      <label for="pinPelajar">PIN pelajar (6 digit)</label>
+      <input id="pinPelajar" type="password" inputmode="numeric"
+        pattern="[0-9]{6}" maxlength="6" autocomplete="current-password" required>
+
+      <button id="loginButton" type="submit">Log Masuk</button>
+    </form>
+    <p id="loginStatus" class="status" role="status"></p>
+  </section>
+
+  <section id="studentPanel" hidden>
+    <div class="panel">
+      <h2 id="namaPelajar">Pelajar</h2>
+      <p id="profilPelajar" class="muted"></p>
+      <p id="studentStatus" class="status" role="status"></p>
+      <button id="logoutButton" class="secondary" type="button">Log Keluar</button>
+    </div>
+
+    <div class="panel">
+      <h2>Subjek Saya</h2>
+      <p id="subjectStatus" class="status" role="status"></p>
+      <div id="subjectList"></div>
+    </div>
+
+    <div class="panel" id="quizPanel" hidden>
+      <h2>Senarai Pentaksiran</h2>
+      <p id="quizStatus" class="status" role="status"></p>
+      <div id="quizList"></div>
+    </div>
+
+    <div class="panel" id="questionPanel" hidden>
+      <h2 id="questionTitle">Soalan Pentaksiran</h2>
+      <p id="questionInfo" class="muted"></p>
+      <p id="questionStatus" class="status" role="status"></p>
+      <form id="answerForm">
+        <div id="questionList"></div>
+        <button id="submitButton" type="submit">Hantar Jawapan</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>ASAS Portal Pentaksiran KVDSMZ V2 · Portal Pelajar</footer>
+
+<script>
+"use strict";
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
+const TOKEN_KEY = "ASAS_V2_TOKEN_SESI_PELAJAR";
+
+const $ = id => document.getElementById(id);
+
+let currentQuiz = null;
+let currentQuestions = [];
+
+async function api(data) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
+    body: JSON.stringify(data),
+    redirect: "follow"
+  });
+
+  if (!response.ok) {
+    throw new Error("Ralat HTTP " + response.status);
+  }
+
+  return response.json();
+}
+
+function showMessage(id, message) {
+  $(id).textContent = message || "";
+}
+
+function addText(parent, tag, text, className) {
+  const el = document.createElement(tag);
+  el.textContent = text == null ? "" : String(text);
+  if (className) el.className = className;
+  parent.appendChild(el);
+  return el;
+}
+
+function requireToken() {
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  if (!token) throw new Error("Sesi tamat. Sila log masuk semula.");
+  return token;
+}
+
+// LOGIN PELAJAR
+$("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const noPelajar = $("noPelajar").value.trim();
+  const pin = $("pinPelajar").value;
+
+  if (!/^[0-9]{6}$/.test(pin)) {
+    showMessage("loginStatus", "PIN mestilah tepat 6 digit.");
+    return;
+  }
+
+  $("loginButton").disabled = true;
+  showMessage("loginStatus", "Sedang mengesahkan login...");
+
+  try {
+    const result = await api({
+      tindakan: "login",
+      noPelajar,
+      pin
+    });
+
+    if (!result.berjaya || !result.tokenSesi || !result.pelajar) {
+      throw new Error(result.mesej || "Login tidak berjaya.");
+    }
+
+    sessionStorage.setItem(TOKEN_KEY, result.tokenSesi);
+    $("loginPanel").hidden = true;
+    $("studentPanel").hidden = false;
+
+    $("namaPelajar").textContent =
+      result.pelajar.nama || "Pelajar";
+
+    $("profilPelajar").textContent =
+      "No. pelajar: " + (result.pelajar.noPelajar || noPelajar) +
+      " | Kelas: " + (result.pelajar.kelas || "") +
+      " | Semester: " + (result.pelajar.semester || "");
+
+    $("loginForm").reset();
+    showMessage("studentStatus", "Login berjaya.");
+    await loadSubjects();
+
+  } catch (error) {
+    showMessage("loginStatus", error.message);
+  } finally {
+    $("loginButton").disabled = false;
+  }
+});
+
+// SUBJEK
+async function loadSubjects() {
+  showMessage("subjectStatus", "Memuatkan subjek...");
+  $("subjectList").replaceChildren();
+
+  try {
+    const result = await api({
+      tindakan: "senaraiSubjek",
+      tokenSesi: requireToken()
+    });
+
+    if (!result.berjaya) {
+      throw new Error(result.mesej || "Subjek gagal dimuatkan.");
+    }
+
+    const subjects = result.subjek || [];
+
+    if (!subjects.length) {
+      showMessage("subjectStatus", "Tiada subjek tersedia.");
+      return;
+    }
+
+    showMessage("subjectStatus", "Jumlah subjek: " + subjects.length);
+
+    subjects.forEach(subject => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      addText(card, "h3", subject.namaKursus || "Subjek");
+      addText(card, "p", "Kod: " + (subject.kodKursus || ""), "muted");
+
+      const button = addText(card, "button", "Lihat Pentaksiran");
+      button.type = "button";
+      button.addEventListener("click", () => loadQuizzes(subject));
+
+      $("subjectList").appendChild(card);
+    });
+
+  } catch (error) {
+    showMessage("subjectStatus", error.message);
+  }
+}
+
+// KUIZ BAGI SUBJEK
+async function loadQuizzes(subject) {
+  $("quizPanel").hidden = false;
+  $("questionPanel").hidden = true;
+  $("quizList").replaceChildren();
+  showMessage("quizStatus", "Memuatkan pentaksiran...");
+
+  try {
+    const result = await api({
+      tindakan: "senaraiKuizSubjek",
+      kodKursus: subject.kodKursus,
+      tokenSesi: requireToken()
+    });
+
+    if (!result.berjaya) {
+      throw new Error(result.mesej || "Pentaksiran gagal dimuatkan.");
+    }
+
+    const quizzes = result.kuiz || [];
+
+    if (!quizzes.length) {
+      showMessage("quizStatus", "Tiada pentaksiran aktif bagi subjek ini.");
+      return;
+    }
+
+    showMessage("quizStatus", "Jumlah pentaksiran: " + quizzes.length);
+
+    quizzes.forEach(quiz => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      addText(card, "h3", quiz.tajuk || quiz.kodPentaksiran);
+      addText(card, "p",
+        "Kod: " + (quiz.kodPentaksiran || "") +
+        " | Markah penuh: " + (quiz.markahPenuh ?? "-") +
+        " | Tempoh: " + (quiz.tempohMinit ?? "-") + " minit",
+        "muted"
+      );
+
+      const button = addText(card, "button", "Buka Pentaksiran");
+      button.type = "button";
+      button.addEventListener("click", () => loadQuestions(quiz));
+
+      $("quizList").appendChild(card);
+    });
+
+  } catch (error) {
+    showMessage("quizStatus", error.message);
+  }
+}
+
+// PAPAR SOALAN OBJEKTIF DAN SUBJEKTIF
+async function loadQuestions(quiz) {
+  currentQuiz = quiz;
+  $("questionPanel").hidden = false;
+  $("questionList").replaceChildren();
+  showMessage("questionStatus", "Memuatkan soalan...");
+
+  try {
+    const result = await api({
+      tindakan: "soalanKuiz",
+      kodPentaksiran: quiz.kodPentaksiran,
+      tokenSesi: requireToken()
+    });
+
+    if (!result.berjaya) {
+      throw new Error(result.mesej || "Soalan gagal dimuatkan.");
+    }
+
+    currentQuestions = result.soalan || [];
+
+    if (!currentQuestions.length) {
+      showMessage("questionStatus", "Tiada soalan tersedia.");
+      return;
+    }
+
+    $("questionTitle").textContent =
+      quiz.tajuk || quiz.kodPentaksiran;
+
+    $("questionInfo").textContent =
+      "Jumlah soalan: " + currentQuestions.length +
+      ". Pastikan semua jawapan lengkap sebelum menghantar.";
+
+    currentQuestions.forEach((question, index) => {
+      const card = document.createElement("section");
+      card.className = "question";
+
+      const type = String(question.jenisSoalan || "OBJEKTIF")
+        .trim().toUpperCase();
+
+      addText(card, "h3",
+        (index + 1) + ". " + question.soalan +
+        " (" + (question.markah || 0) + " markah)"
+      );
+
+      if (type === "SUBJEKTIF") {
+        const label = addText(card, "label", "Jawapan anda");
+        const textarea = document.createElement("textarea");
+
+        textarea.id = "ans_" + index;
+        textarea.rows = 5;
+        textarea.maxLength = 10000;
+        textarea.required = true;
+        textarea.placeholder = "Taip jawapan anda di sini...";
+        label.htmlFor = textarea.id;
+
+        card.appendChild(textarea);
+
+      } else {
+        [["A", question.pilihanA], ["B", question.pilihanB],
+         ["C", question.pilihanC], ["D", question.pilihanD]]
+          .filter(item => item[1] != null && String(item[1]).trim() !== "")
+          .forEach(item => {
+            const label = document.createElement("label");
+            label.className = "choice";
+
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "ans_" + index;
+            radio.value = item[0];
+            radio.required = true;
+
+            label.appendChild(radio);
+            label.appendChild(
+              document.createTextNode(item[0] + ". " + item[1])
+            );
+            card.appendChild(label);
+          });
+      }
+
+      $("questionList").appendChild(card);
+    });
+
+    showMessage("questionStatus", "");
+
+  } catch (error) {
+    showMessage("questionStatus", error.message);
+  }
+}
+
+// HANTAR JAWAPAN
+$("answerForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!currentQuiz || !currentQuestions.length) return;
+
+  const answers = [];
+
+  for (let i = 0; i < currentQuestions.length; i++) {
+    const question = currentQuestions[i];
+    const type = String(question.jenisSoalan || "OBJEKTIF")
+      .trim().toUpperCase();
+
+    let answer = "";
+
+    if (type === "SUBJEKTIF") {
+      answer = $("ans_" + i)?.value.trim() || "";
+    } else {
+      answer = document.querySelector(
+        'input[name="ans_' + i + '"]:checked'
+      )?.value || "";
+    }
+
+    if (!answer) {
+      showMessage(
+        "questionStatus",
+        "Sila jawab semua soalan. Soalan belum dijawab: " + (i + 1)
+      );
+      return;
+    }
+
+    answers.push({
+      kodSoalan: question.kodSoalan,
+      jawapan: answer
+    });
+  }
+
+  if (!confirm("Hantar semua jawapan sekarang?")) return;
+
+  $("submitButton").disabled = true;
+  showMessage("questionStatus", "Sedang menghantar jawapan...");
+
+  try {
+    const result = await api({
+      tindakan: "hantarJawapan",
+      kodPentaksiran: currentQuiz.kodPentaksiran,
+      jawapan: answers,
+      tokenSesi: requireToken()
+    });
+
+    if (!result.berjaya) {
+      throw new Error(result.mesej || "Jawapan gagal dihantar.");
+    }
+
+    if (result.perluSemakanManual) {
+      showMessage(
+        "questionStatus",
+        (result.mesej || "Jawapan berjaya dihantar.") +
+        " Jawapan subjektif menunggu semakan pensyarah."
+      );
+    } else {
+      const score = result.keputusan || {};
+      showMessage(
+        "questionStatus",
+        "Jawapan dihantar. Markah: " +
+        (score.markah ?? "-") + "/" +
+        (score.markahPenuh ?? "-") + "."
+      );
+    }
+
+    $("submitButton").disabled = true;
+
+  } catch (error) {
+    showMessage("questionStatus", error.message);
+    $("submitButton").disabled = false;
+  }
+});
+
+// LOG KELUAR
+$("logoutButton").addEventListener("click", async () => {
+  const tokenSesi = sessionStorage.getItem(TOKEN_KEY);
+
+  try {
+    if (tokenSesi) {
+      await api({
+        tindakan: "logout",
+        tokenSesi
+      });
+    }
+  } catch (error) {
+    console.warn("Logout server tidak disahkan:", error);
+  }
+
+  sessionStorage.removeItem(TOKEN_KEY);
+  currentQuiz = null;
+  currentQuestions = [];
+
+  $("studentPanel").hidden = true;
+  $("loginPanel").hidden = false;
+  $("quizPanel").hidden = true;
+  $("questionPanel").hidden = true;
+
+  showMessage("loginStatus", "Anda telah log keluar.");
+});
+</script>
+</body>
+</html>
