@@ -1,7 +1,18 @@
-// PULIHKAN PAPARAN LOGIN SEMASA HALAMAN DIBUKA
-document.addEventListener("DOMContentLoaded", function () {
-  const loginPanel = document.getElementById("loginPanel");
-  const dashboardPanel = document.getElementById("dashboardPanel");
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
+const KUNCI_SESI_PENSYARAH = "ASAS_V2_TOKEN_PENSYARAH";
+
+let semuaKeputusan = [];
+let kelasTersedia = [];
+let pentaksiranTersedia = [];
+let namaPensyarah = "";
+let pemasaCarian = null;
+
+const $ = (id) => document.getElementById(id);
+
+function paparLoginAwal() {
+  const loginPanel = $("loginPanel");
+  const dashboardPanel = $("dashboardPanel");
 
   if (loginPanel) {
     loginPanel.hidden = false;
@@ -12,22 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
     dashboardPanel.hidden = true;
     dashboardPanel.classList.add("hidden");
   }
-});
-const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
-
-const KUNCI_SESI_PENSYARAH = "ASAS_V2_TOKEN_PENSYARAH";
-
-const loginPanel = document.getElementById("loginPanel");
-const dashboardPanel = document.getElementById("dashboardPanel");
-const loginForm = document.getElementById("loginForm");
-const loginButton = document.getElementById("loginButton");
-const loginStatus = document.getElementById("loginStatus");
-const dashboardStatus = document.getElementById("dashboardStatus");
-
-let semuaKeputusan = [];
-let kelasTersedia = [];
-let pentaksiranTersedia = [];
-let namaPensyarah = "";
+}
 
 async function panggilAPI(data) {
   const respons = await fetch(API_URL, {
@@ -36,48 +32,62 @@ async function panggilAPI(data) {
       "Content-Type": "text/plain;charset=UTF-8"
     },
     body: JSON.stringify(data),
-    redirect: "follow"
+    redirect: "follow",
+    cache: "no-store"
   });
 
   if (!respons.ok) {
-    throw new Error("Pelayan memulangkan ralat HTTP.");
+    throw new Error("Pelayan memulangkan ralat HTTP " + respons.status);
   }
 
   return respons.json();
+}
+
+function paparMesejLogin(mesej) {
+  const status = $("loginStatus");
+  if (status) status.textContent = mesej || "";
+}
+
+function paparMesejDashboard(mesej) {
+  const status = $("dashboardStatus");
+  if (status) status.textContent = mesej || "";
 }
 
 // ==============================
 // LOGIN PENSYARAH
 // ==============================
 
-loginForm.addEventListener("submit", async function (event) {
+async function kendaliLogin(event) {
   event.preventDefault();
 
-  const idPensyarah = document
-    .getElementById("idPensyarah")
-    .value.trim();
-
-  const pin = document.getElementById("pinPensyarah").value;
+  const borang = $("loginForm");
+  const butang = $("loginButton");
+  const idPensyarah = $("idPensyarah")?.value.trim() || "";
+  const pin = $("pinPensyarah")?.value || "";
 
   if (!idPensyarah || !/^\d{6}$/.test(pin)) {
-    loginStatus.textContent =
-      "Masukkan ID pensyarah dan PIN yang mengandungi 6 digit.";
+    paparMesejLogin("Masukkan ID pensyarah dan PIN 6 digit.");
     return;
   }
 
-  loginButton.disabled = true;
-  loginStatus.textContent = "Sedang mengesahkan login...";
+  if (butang) butang.disabled = true;
+  paparMesejLogin("Sedang mengesahkan login...");
 
   try {
     const hasil = await panggilAPI({
       tindakan: "loginPensyarah",
-      idPensyarah: idPensyarah,
-      pin: pin
+      idPensyarah,
+      pin
     });
 
-    if (!hasil.berjaya || !hasil.tokenPensyarah) {
-      loginStatus.textContent =
-        hasil.mesej || "Login tidak berjaya.";
+    console.log("Respons login pensyarah:", {
+      berjaya: hasil?.berjaya,
+      adaToken: Boolean(hasil?.tokenPensyarah),
+      mesej: hasil?.mesej
+    });
+
+    if (!hasil?.berjaya || !hasil?.tokenPensyarah) {
+      paparMesejLogin(hasil?.mesej || "Login tidak berjaya.");
       return;
     }
 
@@ -89,26 +99,33 @@ loginForm.addEventListener("submit", async function (event) {
     namaPensyarah =
       hasil.pensyarah?.nama ||
       hasil.pensyarah?.idPensyarah ||
-      "Pensyarah";
+      idPensyarah;
 
-    loginForm.reset();
-    loginPanel.hidden = true;
-    dashboardPanel.hidden = false;
+    if (borang) borang.reset();
 
-    document.getElementById("namaPensyarah").textContent =
+    $("loginPanel").hidden = true;
+    $("loginPanel").classList.add("hidden");
+
+    $("dashboardPanel").hidden = false;
+    $("dashboardPanel").classList.remove("hidden");
+
+    $("namaPensyarah").textContent =
       "Log masuk sebagai " + namaPensyarah;
 
-    loginStatus.textContent = "";
+    paparMesejLogin("");
+    paparMesejDashboard("Login berjaya. Sedang memuatkan dashboard...");
+
     await muatDashboardPensyarah();
 
   } catch (ralat) {
-    console.error(ralat);
-    loginStatus.textContent =
-      "Login gagal disambungkan. Semak URL Apps Script dan deployment.";
+    console.error("Ralat login:", ralat);
+    paparMesejLogin(
+      "Tidak dapat menghubungi API. Semak URL dan deployment Apps Script."
+    );
   } finally {
-    loginButton.disabled = false;
+    if (butang) butang.disabled = false;
   }
-});
+}
 
 // ==============================
 // MUAT DATA DASHBOARD
@@ -122,49 +139,57 @@ async function muatDashboardPensyarah() {
     return;
   }
 
-  dashboardStatus.textContent = "Sedang memuatkan keputusan...";
+  paparMesejDashboard("Sedang memuatkan keputusan...");
 
   try {
     const hasil = await panggilAPI({
       tindakan: "dashboardPensyarah",
       tokenPensyarah: token,
-      kelas: document.getElementById("filterKelas").value,
-      kodPentaksiran:
-        document.getElementById("filterPentaksiran").value,
-      carian: document.getElementById("carian").value.trim()
+      kelas: $("filterKelas")?.value || "",
+      kodPentaksiran: $("filterPentaksiran")?.value || "",
+      carian: $("carian")?.value.trim() || ""
     });
 
-    if (!hasil.berjaya) {
-      tamatkanSesiPensyarah(
-        hasil.mesej || "Sesi tamat. Sila log masuk semula."
+    console.log("Respons dashboard:", {
+      berjaya: hasil?.berjaya,
+      mesej: hasil?.mesej,
+      bilanganKeputusan: Array.isArray(hasil?.keputusan)
+        ? hasil.keputusan.length
+        : 0
+    });
+
+    if (!hasil?.berjaya) {
+      // Jangan buang sesi secara automatik untuk semua jenis ralat.
+      // Paparkan mesej supaya punca dapat dikenal pasti.
+      paparMesejDashboard(
+        hasil?.mesej || "Dashboard gagal dimuatkan."
       );
       return;
     }
 
     const ringkasan = hasil.ringkasan || {};
 
-    document.getElementById("jumlahPelajar").textContent =
+    $("jumlahPelajar").textContent =
       ringkasan.jumlahPelajar ?? 0;
 
-    document.getElementById("purataMarkah").textContent =
+    $("purataMarkah").textContent =
       (ringkasan.purataMarkah ?? 0) + "%";
 
-    document.getElementById("kadarLulus").textContent =
+    $("kadarLulus").textContent =
       (ringkasan.kadarLulus ?? 0) + "%";
 
-    document.getElementById("jumlahRekod").textContent =
+    $("jumlahRekod").textContent =
       ringkasan.jumlahRekod ?? 0;
 
-    kelasTersedia = hasil.kelas || [];
-    pentaksiranTersedia = hasil.pentaksiran || [];
-    semuaKeputusan = hasil.keputusan || [];
+    kelasTersedia = Array.isArray(hasil.kelas) ? hasil.kelas : [];
+    pentaksiranTersedia = Array.isArray(hasil.pentaksiran)
+      ? hasil.pentaksiran
+      : [];
+    semuaKeputusan = Array.isArray(hasil.keputusan)
+      ? hasil.keputusan
+      : [];
 
-    kemasKiniPilihan(
-      "filterKelas",
-      kelasTersedia,
-      "Semua kelas"
-    );
-
+    kemasKiniPilihan("filterKelas", kelasTersedia, "Semua kelas");
     kemasKiniPilihan(
       "filterPentaksiran",
       pentaksiranTersedia,
@@ -173,15 +198,18 @@ async function muatDashboardPensyarah() {
 
     paparKeputusan(semuaKeputusan);
 
-    dashboardStatus.textContent =
+    paparMesejDashboard(
       hasil.mesej ||
-      "Keputusan berjaya dimuatkan: " +
-      semuaKeputusan.length + " rekod.";
+      "Dashboard dimuatkan. Jumlah rekod: " +
+      semuaKeputusan.length + "."
+    );
 
   } catch (ralat) {
-    console.error(ralat);
-    dashboardStatus.textContent =
-      "Gagal memuatkan dashboard. Semak sambungan dan URL API.";
+    console.error("Ralat memuatkan dashboard:", ralat);
+    paparMesejDashboard(
+      "Login berjaya tetapi dashboard gagal dimuatkan. " +
+      "Semak respons API dan deployment."
+    );
   }
 }
 
@@ -190,9 +218,10 @@ async function muatDashboardPensyarah() {
 // ==============================
 
 function kemasKiniPilihan(id, senarai, labelSemua) {
-  const elemen = document.getElementById(id);
-  const nilaiSemasa = elemen.value;
+  const elemen = $(id);
+  if (!elemen) return;
 
+  const nilaiSemasa = elemen.value;
   elemen.replaceChildren();
 
   const pilihanSemua = document.createElement("option");
@@ -200,7 +229,7 @@ function kemasKiniPilihan(id, senarai, labelSemua) {
   pilihanSemua.textContent = labelSemua;
   elemen.appendChild(pilihanSemua);
 
-  senarai.forEach(function (nilai) {
+  senarai.forEach((nilai) => {
     const pilihan = document.createElement("option");
     pilihan.value = nilai;
     pilihan.textContent = nilai;
@@ -217,36 +246,36 @@ function kemasKiniPilihan(id, senarai, labelSemua) {
 // ==============================
 
 function paparKeputusan(senarai) {
-  const tbody = document.getElementById("jadualKeputusan");
+  const tbody = $("jadualKeputusan");
+  if (!tbody) return;
+
   tbody.replaceChildren();
 
   if (!senarai.length) {
     const baris = document.createElement("tr");
     const sel = document.createElement("td");
-
     sel.colSpan = 8;
     sel.textContent = "Tiada keputusan ditemui.";
-
     baris.appendChild(sel);
     tbody.appendChild(baris);
     return;
   }
 
-  senarai.forEach(function (rekod, indeks) {
+  senarai.forEach((rekod, indeks) => {
     const baris = document.createElement("tr");
 
     const nilai = [
       indeks + 1,
-      rekod.noPelajar,
-      rekod.nama,
-      rekod.kelas,
-      rekod.kodPentaksiran,
+      rekod.noPelajar ?? "",
+      rekod.nama ?? "",
+      rekod.kelas ?? "",
+      rekod.kodPentaksiran ?? "",
       (rekod.markah ?? 0) + " / " + (rekod.markahPenuh ?? 0),
       (rekod.peratus ?? 0) + "%",
-      rekod.status || ""
+      rekod.status ?? ""
     ];
 
-    nilai.forEach(function (teks) {
+    nilai.forEach((teks) => {
       const sel = document.createElement("td");
       sel.textContent = String(teks);
       baris.appendChild(sel);
@@ -260,69 +289,60 @@ function paparKeputusan(senarai) {
 // PENAPIS KEPUTUSAN
 // ==============================
 
-let pemasaCarian;
-
-document.getElementById("carian").addEventListener(
-  "input",
-  function () {
+function tetapkanPenapis() {
+  $("carian")?.addEventListener("input", function () {
     clearTimeout(pemasaCarian);
+    pemasaCarian = setTimeout(muatDashboardPensyarah, 350);
+  });
 
-    pemasaCarian = setTimeout(function () {
-      muatDashboardPensyarah();
-    }, 350);
-  }
-);
+  $("filterKelas")?.addEventListener(
+    "change",
+    muatDashboardPensyarah
+  );
 
-document.getElementById("filterKelas").addEventListener(
-  "change",
-  muatDashboardPensyarah
-);
+  $("filterPentaksiran")?.addEventListener(
+    "change",
+    muatDashboardPensyarah
+  );
 
-document.getElementById("filterPentaksiran").addEventListener(
-  "change",
-  muatDashboardPensyarah
-);
-
-document.getElementById("resetFilter").addEventListener(
-  "click",
-  function () {
-    document.getElementById("carian").value = "";
-    document.getElementById("filterKelas").value = "";
-    document.getElementById("filterPentaksiran").value = "";
-
+  $("resetFilter")?.addEventListener("click", function () {
+    $("carian").value = "";
+    $("filterKelas").value = "";
+    $("filterPentaksiran").value = "";
     muatDashboardPensyarah();
-  }
-);
+  });
+}
 
 // ==============================
 // LOG KELUAR
 // ==============================
 
-document.getElementById("logoutButton").addEventListener(
-  "click",
-  async function () {
-    const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
-    this.disabled = true;
+async function kendaliLogout() {
+  const butang = $("logoutButton");
+  const token = sessionStorage.getItem(KUNCI_SESI_PENSYARAH);
 
-    try {
-      if (token) {
-        await panggilAPI({
-          tindakan: "logoutPensyarah",
-          tokenPensyarah: token
-        });
-      }
+  if (butang) butang.disabled = true;
 
-      tamatkanSesiPensyarah("Anda telah log keluar.");
-
-    } catch (ralat) {
-      console.error(ralat);
-      dashboardStatus.textContent =
-        "Log keluar gagal disahkan. Cuba sekali lagi.";
-    } finally {
-      this.disabled = false;
+  try {
+    if (token) {
+      await panggilAPI({
+        tindakan: "logoutPensyarah",
+        tokenPensyarah: token
+      });
     }
+
+    tamatkanSesiPensyarah("Anda telah log keluar.");
+
+  } catch (ralat) {
+    console.error("Ralat logout:", ralat);
+    paparMesejDashboard(
+      "Permintaan log keluar gagal. Sesi tempatan akan ditamatkan."
+    );
+    tamatkanSesiPensyarah("Anda telah log keluar pada peranti ini.");
+  } finally {
+    if (butang) butang.disabled = false;
   }
-);
+}
 
 function tamatkanSesiPensyarah(mesej) {
   sessionStorage.removeItem(KUNCI_SESI_PENSYARAH);
@@ -331,15 +351,48 @@ function tamatkanSesiPensyarah(mesej) {
   kelasTersedia = [];
   pentaksiranTersedia = [];
 
-  dashboardPanel.hidden = true;
-  loginPanel.hidden = false;
+  if ($("dashboardPanel")) {
+    $("dashboardPanel").hidden = true;
+    $("dashboardPanel").classList.add("hidden");
+  }
 
-  dashboardStatus.textContent = "";
-  loginStatus.textContent = mesej;
+  if ($("loginPanel")) {
+    $("loginPanel").hidden = false;
+    $("loginPanel").classList.remove("hidden");
+  }
 
-  document.getElementById("jadualKeputusan").replaceChildren();
-  document.getElementById("jumlahPelajar").textContent = "0";
-  document.getElementById("purataMarkah").textContent = "0%";
-  document.getElementById("kadarLulus").textContent = "0%";
-  document.getElementById("jumlahRekod").textContent = "0";
+  paparMesejDashboard("");
+  paparMesejLogin(mesej);
+
+  if ($("jadualKeputusan")) {
+    $("jadualKeputusan").replaceChildren();
+    const baris = document.createElement("tr");
+    const sel = document.createElement("td");
+    sel.colSpan = 8;
+    sel.textContent = "Log masuk untuk melihat keputusan.";
+    baris.appendChild(sel);
+    $("jadualKeputusan").appendChild(baris);
+  }
+
+  if ($("jumlahPelajar")) $("jumlahPelajar").textContent = "0";
+  if ($("purataMarkah")) $("purataMarkah").textContent = "0%";
+  if ($("kadarLulus")) $("kadarLulus").textContent = "0%";
+  if ($("jumlahRekod")) $("jumlahRekod").textContent = "0";
 }
+
+// ==============================
+// MULAKAN APLIKASI
+// ==============================
+
+document.addEventListener("DOMContentLoaded", function () {
+  paparLoginAwal();
+
+  $("loginForm")?.addEventListener("submit", kendaliLogin);
+  $("logoutButton")?.addEventListener("click", kendaliLogout);
+
+  tetapkanPenapis();
+
+  // Jangan pulihkan dashboard menggunakan token lama secara automatik.
+  // Pensyarah perlu log masuk semula untuk mendapatkan sesi yang sah.
+  sessionStorage.removeItem(KUNCI_SESI_PENSYARAH);
+});
