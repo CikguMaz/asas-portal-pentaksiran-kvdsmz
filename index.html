@@ -4,217 +4,446 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#12305a">
-  <meta name="description" content="Dashboard Pensyarah ASAS Portal Pentaksiran KVDSMZ">
-  <title>Dashboard Pensyarah | ASAS KVDSMZ</title>
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Pastikan dashboard tersembunyi sebelum JavaScript dijalankan -->
+  <meta name="theme-color" content="#123b65">
+  <title>Dashboard Pensyarah | ASAS V2 KVDSMZ</title>
   <style>
-    [hidden],
-    .hidden {
-      display: none !important;
+    :root {
+      --biru: #123b65;
+      --biru-muda: #eaf2fa;
+      --hijau: #18794e;
+      --merah: #b42318;
+      --kelabu: #667085;
+      --garis: #dfe5ec;
+      --latar: #f4f7fb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--latar);
+      color: #182230;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--biru);
+      color: white;
+      padding: 22px 18px;
+    }
+
+    .header-inner, main {
+      width: min(1180px, 94%);
+      margin: auto;
+    }
+
+    header h1 {
+      font-size: 24px;
+      margin: 0 0 5px;
+    }
+
+    header p { margin: 0; opacity: .9; }
+
+    main { padding: 24px 0 45px; }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--garis);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px #1822300a;
+    }
+
+    .panel h2 {
+      font-size: 20px;
+      margin: 0 0 16px;
+    }
+
+    .hidden, [hidden] { display: none !important; }
+
+    .login-wrap {
+      max-width: 450px;
+      margin: 35px auto;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 12px 0 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: white;
+      color: #182230;
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 7px;
+      padding: 11px 15px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--biru);
+      color: white;
+    }
+
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .55; cursor: wait; }
+
+    .btn-secondary {
+      background: #e8edf4;
+      color: #24364b;
+    }
+
+    .btn-logout { background: #a52a2a; }
+
+    .login-button {
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--kelabu);
+      font-size: 14px;
+    }
+
+    .status {
+      margin-top: 12px;
+      color: var(--biru);
+      overflow-wrap: anywhere;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: white;
+      border: 1px solid var(--garis);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .stat-label {
+      color: var(--kelabu);
+      font-size: 13px;
+    }
+
+    .stat-value {
+      font-size: 27px;
+      font-weight: 700;
+      color: var(--biru);
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--garis);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--garis);
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--biru-muda);
+      color: #183b60;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    #jadualSubjektif input {
+      min-width: 85px;
+    }
+
+    .notice {
+      padding: 12px;
+      background: #fff8e6;
+      border: 1px solid #f0d58a;
+      border-radius: 7px;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--kelabu);
+      font-size: 13px;
+      padding: 20px;
+    }
+
+    @media (max-width: 760px) {
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filters { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+      header h1 { font-size: 21px; }
+    }
+
+    @media (max-width: 380px) {
+      .cards { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
-  <header class="header">
-    <div class="container">
-      <h1>ASAS</h1>
-      <p>Portal Pentaksiran KVDSMZ</p>
-      <span>Dashboard Pensyarah V2</span>
+  <header>
+    <div class="header-inner">
+      <h1>ASAS Portal Pentaksiran KVDSMZ</h1>
+      <p>Dashboard Pensyarah · Versi 2</p>
     </div>
   </header>
 
-  <main class="container">
-
-    <!-- LOGIN PENSYARAH -->
-    <section id="loginPanel" class="panel">
+  <main>
+    <!-- LOGIN -->
+    <section id="loginPanel" class="panel login-wrap">
       <h2>Log Masuk Pensyarah</h2>
-      <p>Masukkan ID pensyarah dan PIN yang telah didaftarkan.</p>
+      <p class="muted">Masukkan ID pensyarah dan PIN untuk mengakses dashboard.</p>
 
-      <form id="loginForm" autocomplete="on">
+      <form id="loginForm">
         <label for="idPensyarah">ID Pensyarah</label>
         <input
-          type="text"
           id="idPensyarah"
           name="idPensyarah"
-          placeholder="Contoh: GURU001"
+          type="text"
           autocomplete="username"
-          autocapitalize="characters"
           required
         >
 
-        <label for="pinPensyarah">PIN</label>
+        <label for="pinPensyarah">PIN (6 digit)</label>
         <input
-          type="password"
           id="pinPensyarah"
           name="pinPensyarah"
-          placeholder="Masukkan PIN 6 digit"
+          type="password"
           inputmode="numeric"
           pattern="[0-9]{6}"
-          minlength="6"
           maxlength="6"
           autocomplete="current-password"
           required
         >
 
-        <button type="submit" id="loginButton">
+        <button id="loginButton" class="login-button" type="submit">
           Log Masuk
         </button>
-      </form>
 
-      <p
-        id="loginStatus"
-        role="status"
-        aria-live="polite"
-      ></p>
+        <p id="loginStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
     </section>
 
-    <!-- DASHBOARD PENSYARAH: DISEMBUNYIKAN SEBELUM LOGIN -->
-    <section id="dashboardPanel" class="hidden" hidden>
-
-      <!-- TAJUK DAN LOG KELUAR -->
-      <div class="panel dashboard-heading">
-        <div>
-          <h2>Dashboard Pensyarah</h2>
-          <p id="namaPensyarah">Pensyarah</p>
+    <!-- DASHBOARD -->
+    <section id="dashboardPanel" hidden>
+      <div class="panel">
+        <div class="top-row">
+          <div>
+            <h2>Dashboard Pensyarah</h2>
+            <p id="namaPensyarah" class="muted"></p>
+          </div>
+          <button id="logoutButton" class="btn-logout" type="button">
+            Log Keluar
+          </button>
         </div>
-
-        <button
-          id="logoutButton"
-          type="button"
-          class="secondary"
-        >
-          Log Keluar
-        </button>
+        <p id="dashboardStatus" class="status" role="status" aria-live="polite"></p>
       </div>
 
-      <p
-        id="dashboardStatus"
-        role="status"
-        aria-live="polite"
-      ></p>
+      <!-- RINGKASAN -->
+      <section class="cards" aria-label="Ringkasan keputusan">
+        <div class="stat">
+          <div class="stat-label">Jumlah Pelajar</div>
+          <div id="jumlahPelajar" class="stat-value">0</div>
+        </div>
 
-      <!-- RINGKASAN KEPUTUSAN -->
-      <section
-        class="stats-grid"
-        aria-label="Ringkasan keputusan"
-      >
-        <article class="stat-card">
-          <h3>Jumlah Pelajar</h3>
-          <p id="jumlahPelajar">0</p>
-        </article>
+        <div class="stat">
+          <div class="stat-label">Purata Markah</div>
+          <div id="purataMarkah" class="stat-value">0%</div>
+        </div>
 
-        <article class="stat-card">
-          <h3>Purata Markah</h3>
-          <p id="purataMarkah">0%</p>
-        </article>
+        <div class="stat">
+          <div class="stat-label">Kadar Lulus</div>
+          <div id="kadarLulus" class="stat-value">0%</div>
+        </div>
 
-        <article class="stat-card">
-          <h3>Kadar Lulus</h3>
-          <p id="kadarLulus">0%</p>
-        </article>
-
-        <article class="stat-card">
-          <h3>Rekod Keputusan</h3>
-          <p id="jumlahRekod">0</p>
-        </article>
+        <div class="stat">
+          <div class="stat-label">Jumlah Rekod</div>
+          <div id="jumlahRekod" class="stat-value">0</div>
+        </div>
       </section>
 
-      <!-- CARIAN DAN PENAPIS -->
+      <!-- KEPUTUSAN -->
       <section class="panel">
-        <h2>Carian Keputusan</h2>
+        <h2>Keputusan Pentaksiran</h2>
 
-        <div class="filter-grid">
-
-          <div>
-            <label for="carian">
-              Nama atau nombor pelajar
-            </label>
-            <input
-              type="search"
-              id="carian"
-              name="carian"
-              placeholder="Taip nama atau nombor pelajar"
-              autocomplete="off"
-            >
-          </div>
-
+        <div class="filters">
           <div>
             <label for="filterKelas">Kelas</label>
-            <select id="filterKelas" name="filterKelas">
+            <select id="filterKelas">
               <option value="">Semua kelas</option>
             </select>
           </div>
 
           <div>
             <label for="filterPentaksiran">Pentaksiran</label>
-            <select
-              id="filterPentaksiran"
-              name="filterPentaksiran"
-            >
+            <select id="filterPentaksiran">
               <option value="">Semua pentaksiran</option>
             </select>
           </div>
 
+          <div>
+            <label for="carian">Carian pelajar</label>
+            <input
+              id="carian"
+              type="search"
+              placeholder="Nama atau nombor pelajar"
+            >
+          </div>
         </div>
 
-        <button
-          type="button"
-          id="resetFilter"
-          class="secondary"
-        >
-          Reset Penapis
-        </button>
-      </section>
+        <div class="filter-actions">
+          <button id="resetFilter" class="btn-secondary" type="button">
+            Reset Penapis
+          </button>
+          <button type="button" onclick="muatDashboardPensyarah()">
+            Muat Semula Keputusan
+          </button>
+        </div>
 
-      <!-- JADUAL KEPUTUSAN -->
-      <section class="panel">
-        <h2>Senarai Keputusan Pelajar</h2>
-
-        <div class="table-wrap">
+        <div class="table-wrap" style="margin-top:16px">
           <table>
             <thead>
               <tr>
-                <th scope="col">Bil.</th>
-                <th scope="col">No. Pelajar</th>
-                <th scope="col">Nama</th>
-                <th scope="col">Kelas</th>
-                <th scope="col">Pentaksiran</th>
-                <th scope="col">Markah</th>
-                <th scope="col">Peratus</th>
-                <th scope="col">Status</th>
+                <th>Bil.</th>
+                <th>No. Pelajar</th>
+                <th>Nama</th>
+                <th>Kelas</th>
+                <th>Kod Pentaksiran</th>
+                <th>Markah</th>
+                <th>Peratus</th>
+                <th>Status</th>
               </tr>
             </thead>
-
             <tbody id="jadualKeputusan">
               <tr>
-                <td colspan="8">
-                  Log masuk untuk melihat keputusan.
-                </td>
+                <td colspan="8">Log masuk untuk melihat keputusan.</td>
               </tr>
             </tbody>
           </table>
         </div>
+      </section>
+
+      <!-- SEMAKAN SUBJEKTIF -->
+      <section class="panel">
+        <h2>Semakan Jawapan Subjektif</h2>
+
+        <div class="notice">
+          Pensyarah perlu menyemak jawapan pelajar dan memasukkan markah
+          secara manual. Pastikan markah tidak melebihi markah penuh soalan.
+        </div>
+
+        <div class="filters">
+          <div>
+            <label for="filterSubjektif">Kod Pentaksiran</label>
+            <select id="filterSubjektif">
+              <option value="">Semua pentaksiran</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="statusSubjektif">Status Semakan</label>
+            <select id="statusSubjektif">
+              <option value="BELUM_DISEMAK">Belum disemak</option>
+              <option value="SEMUA">Semua jawapan</option>
+              <option value="TELAH_DISEMAK">Telah disemak</option>
+            </select>
+          </div>
+
+          <div>
+            <button id="muatSubjektifButton" type="button">
+              Muat Jawapan
+            </button>
+          </div>
+        </div>
 
         <p
-          id="statusKeputusan"
+          id="statusSubjektifMesej"
+          class="status"
           role="status"
           aria-live="polite"
         ></p>
-      </section>
 
+        <div class="table-wrap" style="margin-top:14px">
+          <table>
+            <thead>
+              <tr>
+                <th>Pelajar</th>
+                <th>Pentaksiran</th>
+                <th>Soalan</th>
+                <th>Jawapan Pelajar</th>
+                <th>Markah</th>
+                <th>Status</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="jadualSubjektif">
+              <tr>
+                <td colspan="7">Log masuk untuk melihat jawapan subjektif.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="container">
-      <p>ASAS Portal Pentaksiran KVDSMZ V2</p>
-    </div>
+  <footer>
+    ASAS Portal Pentaksiran KVDSMZ · Dashboard Pensyarah V2
   </footer>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
