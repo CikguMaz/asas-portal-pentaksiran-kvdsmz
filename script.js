@@ -319,4 +319,234 @@ if (sessionStorage.getItem(TOKEN_KEY)) {
   muatDashboard();
 }
 
+/* =========================================
+   SEMAKAN SOALAN SUBJEKTIF V2
+   Tampal di hujung script.js sedia ada
+   ========================================= */
+
+let cacheJawapanSubjektif = [];
+
+async function muatJawapanSubjektif() {
+  const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  const statusEl = $("statusSubjektifMesej");
+  const tbody = $("jadualSubjektif");
+  const butang = $("muatSubjektifButton");
+
+  if (!tbody) return;
+
+  if (!tokenPensyarah) {
+    paparMesej(statusEl, "Sila log masuk sebagai pensyarah.");
+    return;
+  }
+
+  paparMesej(statusEl, "Memuatkan jawapan subjektif...");
+  if (butang) butang.disabled = true;
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "senaraiJawapanSubjektifV2",
+      tokenPensyarah: tokenPensyarah,
+      status: "SEMUA",
+      kodPentaksiran: ""
+    });
+
+    if (!hasil.berjaya) {
+      throw new Error(
+        hasil.mesej || "Jawapan subjektif gagal dimuatkan."
+      );
+    }
+
+    cacheJawapanSubjektif = Array.isArray(hasil.jawapan)
+      ? hasil.jawapan
+      : [];
+
+    const kodPentaksiran = [
+      ...new Set(
+        cacheJawapanSubjektif
+          .map(item => item.kodPentaksiran)
+          .filter(Boolean)
+      )
+    ].sort();
+
+    isiSelect(
+      "filterSubjektif",
+      kodPentaksiran,
+      "Semua pentaksiran"
+    );
+
+    tapisJawapanSubjektif();
+
+    paparMesej(
+      statusEl,
+      `Berjaya memuatkan ${cacheJawapanSubjektif.length} jawapan subjektif.`
+    );
+
+  } catch (error) {
+    console.error("Ralat jawapan subjektif:", error);
+    paparMesej(statusEl, error.message);
+
+  } finally {
+    if (butang) butang.disabled = false;
+  }
+}
+
+function tapisJawapanSubjektif() {
+  const kod = $("filterSubjektif")?.value || "";
+  const status = $("statusSubjektif")?.value || "BELUM_DISEMAK";
+
+  const jawapan = cacheJawapanSubjektif.filter(item =>
+    (!kod || item.kodPentaksiran === kod) &&
+    (status === "SEMUA" || item.statusSemakan === status)
+  );
+
+  paparJadualSubjektif(jawapan);
+}
+
+function paparJadualSubjektif(jawapan) {
+  const tbody = $("jadualSubjektif");
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  if (!jawapan.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+
+    td.colSpan = 7;
+    td.textContent =
+      "Tiada jawapan subjektif untuk penapis yang dipilih.";
+
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  jawapan.forEach(item => {
+    const tr = document.createElement("tr");
+
+    function tambahSel(text) {
+      const td = document.createElement("td");
+      td.textContent = String(text ?? "");
+      tr.appendChild(td);
+      return td;
+    }
+
+    tambahSel(
+      `${item.namaPelajar || ""} (${item.noPelajar || ""})`
+    );
+
+    tambahSel(item.kodPentaksiran);
+
+    tambahSel(
+      `${item.soalan || ""} [${item.kodSoalan || ""}]`
+    );
+
+    const selJawapan = tambahSel(
+      item.jawapan || "(Tiada jawapan)"
+    );
+    selJawapan.style.whiteSpace = "pre-wrap";
+
+    const selMarkah = document.createElement("td");
+    const inputMarkah = document.createElement("input");
+
+    inputMarkah.type = "number";
+    inputMarkah.min = "0";
+    inputMarkah.max = String(item.markahPenuh || 0);
+    inputMarkah.step = "any";
+    inputMarkah.value = String(item.markahDiperoleh ?? 0);
+    inputMarkah.style.width = "75px";
+
+    selMarkah.appendChild(inputMarkah);
+    selMarkah.appendChild(
+      document.createTextNode(` / ${item.markahPenuh || 0}`)
+    );
+    tr.appendChild(selMarkah);
+
+    tambahSel(item.statusSemakan || "BELUM_DISEMAK");
+
+    const selTindakan = document.createElement("td");
+    const butangSimpan = document.createElement("button");
+
+    butangSimpan.type = "button";
+    butangSimpan.textContent = "Simpan Markah";
+
+    butangSimpan.addEventListener("click", async () => {
+      const markah = Number(inputMarkah.value);
+      const maksimum = Number(item.markahPenuh) || 0;
+
+      if (
+        inputMarkah.value.trim() === "" ||
+        !Number.isFinite(markah) ||
+        markah < 0 ||
+        markah > maksimum
+      ) {
+        paparMesej(
+          $("statusSubjektifMesej"),
+          `Markah mesti antara 0 hingga ${maksimum}.`
+        );
+        inputMarkah.focus();
+        return;
+      }
+
+      butangSimpan.disabled = true;
+
+      paparMesej(
+        $("statusSubjektifMesej"),
+        "Sedang menyimpan markah..."
+      );
+
+      try {
+        const hasil = await panggilAPI({
+          tindakan: "simpanMarkahSubjektifV2",
+          tokenPensyarah:
+            sessionStorage.getItem(TOKEN_KEY),
+          payload: {
+            idCubaan: item.idCubaan,
+            kodSoalan: item.kodSoalan,
+            markah: markah
+          }
+        });
+
+        if (!hasil.berjaya) {
+          throw new Error(
+            hasil.mesej || "Markah gagal disimpan."
+          );
+        }
+
+        paparMesej(
+          $("statusSubjektifMesej"),
+          hasil.mesej || "Markah berjaya disimpan."
+        );
+
+        await muatJawapanSubjektif();
+        await muatDashboard();
+
+      } catch (error) {
+        console.error("Ralat simpan markah:", error);
+        paparMesej(
+          $("statusSubjektifMesej"),
+          error.message || "Markah gagal disimpan."
+        );
+
+      } finally {
+        butangSimpan.disabled = false;
+      }
+    });
+
+    selTindakan.appendChild(butangSimpan);
+    tr.appendChild(selTindakan);
+    tbody.appendChild(tr);
+  });
+}
+
+$("muatSubjektifButton")
+  ?.addEventListener("click", muatJawapanSubjektif);
+
+$("filterSubjektif")
+  ?.addEventListener("change", tapisJawapanSubjektif);
+
+$("statusSubjektif")
+  ?.addEventListener("change", tapisJawapanSubjektif);
+
+
 // Nota: Fungsi semakan subjektif belum dimasukkan dalam versi ini.
