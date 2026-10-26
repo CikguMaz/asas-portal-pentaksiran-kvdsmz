@@ -565,6 +565,7 @@ let cacheBankSoalan = [];
 
 async function muatBankSoalan() {
   const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  window.tokenUntukSemakan = tokenPensyarah;
   console.log(
   "TOKEN MUAT BANK:",
   tokenPensyarah ? tokenPensyarah.length : 0
@@ -850,6 +851,10 @@ async function simpanBankSoalan(event) {
   event.preventDefault();
 
   const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  console.log(
+  "TOKEN SAMA:",
+  tokenPensyarah === window.tokenUntukSemakan
+);
   console.log(
   "TOKEN SIMPAN BANK:",
   tokenPensyarah ? tokenPensyarah.length : 0
