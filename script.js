@@ -733,6 +733,7 @@ function kemasKiniJenisBankSoalan() {
   }
 }
 
+
 async function simpanBankSoalan(event) {
   event.preventDefault();
 
@@ -757,6 +758,7 @@ async function simpanBankSoalan(event) {
   }
 
   const jenisSoalan = $("bankJenisSoalan").value;
+
   const payload = {
     kodPentaksiran,
     jenisSoalan,
@@ -790,31 +792,57 @@ async function simpanBankSoalan(event) {
     return;
   }
 
+  const modEdit = Boolean(kodSoalanSedangDiedit);
+
+  if (modEdit) {
+    payload.kodSoalan = kodSoalanSedangDiedit;
+  }
+
   if (butang) butang.disabled = true;
-  paparMesej(statusEl, "Sedang menyimpan soalan...");
+
+  paparMesej(
+    statusEl,
+    modEdit ? "Sedang mengemas kini soalan..." : "Sedang menyimpan soalan..."
+  );
 
   try {
     const hasil = await panggilAPI({
-      tindakan: "tambahSoalanBankV2",
+      tindakan: modEdit
+        ? "kemasKiniSoalanBankV2"
+        : "tambahSoalanBankV2",
       tokenPensyarah,
       payload
     });
 
     if (!hasil.berjaya) {
       throw new Error(
-        hasil.mesej || "Soalan gagal disimpan."
+        hasil.mesej || (
+          modEdit
+            ? "Soalan gagal dikemas kini."
+            : "Soalan gagal disimpan."
+        )
       );
     }
 
     paparMesej(
       statusEl,
-      hasil.mesej || "Soalan berjaya disimpan."
+      hasil.mesej || (
+        modEdit
+          ? "Soalan berjaya dikemas kini."
+          : "Soalan berjaya disimpan."
+      )
     );
 
+    kodSoalanSedangDiedit = "";
     borang.reset();
     kemasKiniJenisBankSoalan();
 
+    if (butang) {
+      butang.textContent = "Simpan Soalan";
+    }
+
     await muatBankSoalan();
+
   } catch (error) {
     console.error("Ralat simpan bank soalan:", error);
     paparMesej(statusEl, error.message);
