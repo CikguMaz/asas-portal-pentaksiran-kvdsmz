@@ -914,13 +914,17 @@ async function simpanBankSoalan(event) {
   );
 
   try {
-    const hasil = await panggilAPI({
-      tindakan: modEdit
-        ? "kemasKiniSoalanBankV2"
-        : "tambahSoalanBankV2",
-      tokenPensyarah,
-      payload
-    });
+   const hasil = await panggilAPI({
+  tindakan: modEdit
+    ? "kemasKiniSoalanBankV2"
+    : "tambahSoalanBankV2",
+  tokenPensyarah,
+  payload
+});
+
+console.log("MOD EDIT:", modEdit);
+console.log("PAYLOAD DIHANTAR:", payload);
+console.log("RESPONS API:", hasil);
 
     if (!hasil.berjaya) {
       throw new Error(
