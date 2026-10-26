@@ -163,7 +163,11 @@ async function muatDashboard() {
       pilihanPentaksiran,
       "Semua pentaksiran"
     );
-
+isiSelect(
+  "bankKodPentaksiran",
+  pilihanPentaksiran,
+  "Pilih pentaksiran"
+);
     semuaKeputusan = hasil.keputusan || [];
     paparKeputusan(semuaKeputusan);
 
@@ -550,3 +554,267 @@ $("statusSubjektif")
 
 
 // Nota: Fungsi semakan subjektif belum dimasukkan dalam versi ini.
+
+/* =========================================
+   BANK SOALAN V2
+   ========================================= */
+
+let cacheBankSoalan = [];
+
+async function muatBankSoalan() {
+  const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  const kodPentaksiran = $("bankKodPentaksiran")?.value || "";
+  const carian = $("bankCarian")?.value.trim() || "";
+  const statusEl = $("bankStatus");
+  const tbody = $("bankJadualBody");
+  const butang = $("bankMuatButton");
+
+  if (!tbody) return;
+
+  if (!tokenPensyarah) {
+    paparMesej(statusEl, "Sila log masuk sebagai pensyarah.");
+    return;
+  }
+
+  if (!kodPentaksiran) {
+    paparMesej(statusEl, "Sila pilih kod pentaksiran.");
+    tbody.replaceChildren();
+
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 6;
+    td.textContent = "Pilih pentaksiran untuk melihat bank soalan.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  paparMesej(statusEl, "Memuatkan bank soalan...");
+  if (butang) butang.disabled = true;
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "senaraiBankSoalanV2",
+      tokenPensyarah,
+      payload: {
+        kodPentaksiran,
+        carian
+      }
+    });
+
+    if (!hasil.berjaya) {
+      throw new Error(
+        hasil.mesej || "Bank soalan gagal dimuatkan."
+      );
+    }
+
+    cacheBankSoalan = Array.isArray(hasil.soalan)
+      ? hasil.soalan
+      : [];
+
+    paparJadualBankSoalan(cacheBankSoalan);
+
+    paparMesej(
+      statusEl,
+      `Berjaya memuatkan ${cacheBankSoalan.length} soalan.`
+    );
+  } catch (error) {
+    console.error("Ralat bank soalan:", error);
+    paparMesej(statusEl, error.message);
+
+    tbody.replaceChildren();
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 6;
+    td.textContent = "Bank soalan gagal dimuatkan.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  } finally {
+    if (butang) butang.disabled = false;
+  }
+}
+
+function paparJadualBankSoalan(soalan) {
+  const tbody = $("bankJadualBody");
+  if (!tbody) return;
+
+  tbody.replaceChildren();
+
+  if (!soalan.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 6;
+    td.textContent = "Tiada soalan ditemui.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  soalan.forEach(item => {
+    const tr = document.createElement("tr");
+
+    const nilai = [
+      item.kodSoalan,
+      item.jenisSoalan,
+      item.soalan,
+      item.jawapanBetul,
+      item.markah,
+      item.topik
+    ];
+
+    nilai.forEach((teks, index) => {
+      const td = document.createElement("td");
+      td.textContent = String(teks ?? "");
+
+      if (index === 2) {
+        td.style.whiteSpace = "pre-wrap";
+        td.style.minWidth = "220px";
+      }
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+function kemasKiniJenisBankSoalan() {
+  const jenis = $("bankJenisSoalan")?.value || "OBJEKTIF";
+  const panelPilihan = $("bankPilihanPanel");
+  const medanPilihan = [
+    $("bankPilihanA"),
+    $("bankPilihanB"),
+    $("bankPilihanC"),
+    $("bankPilihanD")
+  ];
+  const jawapanBetul = $("bankJawapanBetul");
+
+  const objektif = jenis === "OBJEKTIF";
+
+  if (panelPilihan) {
+    panelPilihan.hidden = !objektif;
+  }
+
+  medanPilihan.forEach(medan => {
+    if (medan) {
+      medan.required = objektif;
+    }
+  });
+
+  if (jawapanBetul) {
+    jawapanBetul.required = objektif;
+  }
+}
+
+async function simpanBankSoalan(event) {
+  event.preventDefault();
+
+  const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  const statusEl = $("bankStatus");
+  const borang = $("bankBorang");
+  const butang = $("bankSimpanButton");
+
+  if (!tokenPensyarah) {
+    paparMesej(statusEl, "Sila log masuk sebagai pensyarah.");
+    return;
+  }
+
+  if (!borang.reportValidity()) return;
+
+  const kodPentaksiran = $("bankKodPentaksiran")?.value || "";
+
+  if (!kodPentaksiran) {
+    paparMesej(statusEl, "Sila pilih kod pentaksiran terlebih dahulu.");
+    $("bankKodPentaksiran")?.focus();
+    return;
+  }
+
+  const jenisSoalan = $("bankJenisSoalan").value;
+  const payload = {
+    kodPentaksiran,
+    jenisSoalan,
+    soalan: $("bankSoalan").value.trim(),
+    markah: Number($("bankMarkah").value),
+    topik: $("bankTopik").value.trim(),
+    kodGambar: $("bankKodGambar").value.trim(),
+    pilihanA: $("bankPilihanA").value.trim(),
+    pilihanB: $("bankPilihanB").value.trim(),
+    pilihanC: $("bankPilihanC").value.trim(),
+    pilihanD: $("bankPilihanD").value.trim(),
+    jawapanBetul: jenisSoalan === "OBJEKTIF"
+      ? $("bankJawapanBetul").value
+      : ""
+  };
+
+  if (
+    !Number.isFinite(payload.markah) ||
+    payload.markah <= 0
+  ) {
+    paparMesej(statusEl, "Markah penuh mesti lebih besar daripada sifar.");
+    $("bankMarkah").focus();
+    return;
+  }
+
+  if (
+    jenisSoalan === "OBJEKTIF" &&
+    !["A", "B", "C", "D"].includes(payload.jawapanBetul)
+  ) {
+    paparMesej(statusEl, "Sila pilih jawapan betul A, B, C atau D.");
+    return;
+  }
+
+  if (butang) butang.disabled = true;
+  paparMesej(statusEl, "Sedang menyimpan soalan...");
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "tambahSoalanBankV2",
+      tokenPensyarah,
+      payload
+    });
+
+    if (!hasil.berjaya) {
+      throw new Error(
+        hasil.mesej || "Soalan gagal disimpan."
+      );
+    }
+
+    paparMesej(
+      statusEl,
+      hasil.mesej || "Soalan berjaya disimpan."
+    );
+
+    borang.reset();
+    kemasKiniJenisBankSoalan();
+
+    await muatBankSoalan();
+  } catch (error) {
+    console.error("Ralat simpan bank soalan:", error);
+    paparMesej(statusEl, error.message);
+  } finally {
+    if (butang) butang.disabled = false;
+  }
+}
+
+// Daftarkan event Bank Soalan
+$("bankMuatButton")?.addEventListener("click", muatBankSoalan);
+
+$("bankKodPentaksiran")?.addEventListener("change", muatBankSoalan);
+
+$("bankCarian")?.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    muatBankSoalan();
+  }
+});
+
+$("bankBorang")?.addEventListener("submit", simpanBankSoalan);
+
+$("bankJenisSoalan")?.addEventListener(
+  "change",
+  kemasKiniJenisBankSoalan
+);
+
+// Tetapkan paparan awal pilihan objektif/subjektif
+kemasKiniJenisBankSoalan();
+
