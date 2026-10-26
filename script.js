@@ -565,6 +565,10 @@ let cacheBankSoalan = [];
 
 async function muatBankSoalan() {
   const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  console.log(
+  "TOKEN MUAT BANK:",
+  tokenPensyarah ? tokenPensyarah.length : 0
+);
   const kodPentaksiran = $("bankKodPentaksiran")?.value || "";
   const carian = $("bankCarian")?.value.trim() || "";
   const statusEl = $("bankStatus");
@@ -846,6 +850,10 @@ async function simpanBankSoalan(event) {
   event.preventDefault();
 
   const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  console.log(
+  "TOKEN SIMPAN BANK:",
+  tokenPensyarah ? tokenPensyarah.length : 0
+);
   const statusEl = $("bankStatus");
   const borang = $("bankBorang");
   const butang = $("bankSimpanButton");
