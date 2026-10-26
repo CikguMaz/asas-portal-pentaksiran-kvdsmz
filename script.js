@@ -745,6 +745,73 @@ function editSoalanBank(kodSoalan) {
   $("bankSoalan").focus();
 }
 
+async function arkibSoalanBank(kodSoalan) {
+  const tokenPensyarah = sessionStorage.getItem(TOKEN_KEY);
+  const statusEl = $("bankStatus");
+
+  if (!tokenPensyarah) {
+    paparMesej(statusEl, "Sila log masuk sebagai pensyarah.");
+    return;
+  }
+
+  const item = cacheBankSoalan.find(
+    soalan => String(soalan.kodSoalan) === String(kodSoalan)
+  );
+
+  if (!item) {
+    paparMesej(statusEl, "Soalan tidak ditemui. Muat semula bank soalan.");
+    return;
+  }
+
+  const sahkan = window.confirm(
+    `Adakah anda pasti mahu mengarkibkan soalan ${kodSoalan}?\n\n` +
+    "Soalan tidak akan dipadam, tetapi tidak lagi dipaparkan dalam senarai aktif."
+  );
+
+  if (!sahkan) return;
+
+  paparMesej(statusEl, "Sedang mengarkibkan soalan...");
+
+  try {
+    const hasil = await panggilAPI({
+      tindakan: "arkibSoalanBankV2",
+      tokenPensyarah,
+      payload: {
+        kodSoalan
+      }
+    });
+
+    if (!hasil.berjaya) {
+      throw new Error(
+        hasil.mesej || "Soalan gagal diarkibkan."
+      );
+    }
+
+    if (kodSoalanSedangDiedit === kodSoalan) {
+      kodSoalanSedangDiedit = "";
+
+      $("bankBorang")?.reset();
+      kemasKiniJenisBankSoalan();
+
+      const butang = $("bankSimpanButton");
+      if (butang) {
+        butang.textContent = "Simpan Soalan";
+      }
+    }
+
+    paparMesej(
+      statusEl,
+      hasil.mesej || "Soalan berjaya diarkibkan."
+    );
+
+    await muatBankSoalan();
+
+  } catch (error) {
+    console.error("Ralat arkib soalan:", error);
+    paparMesej(statusEl, error.message);
+  }
+}
+
 
 function kemasKiniJenisBankSoalan() {
   const jenis = $("bankJenisSoalan")?.value || "OBJEKTIF";
