@@ -634,6 +634,7 @@ async function muatBankSoalan() {
   }
 }
 
+
 function paparJadualBankSoalan(soalan) {
   const tbody = $("bankJadualBody");
   if (!tbody) return;
@@ -643,7 +644,7 @@ function paparJadualBankSoalan(soalan) {
   if (!soalan.length) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 6;
+    td.colSpan = 7;
     td.textContent = "Tiada soalan ditemui.";
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -674,9 +675,33 @@ function paparJadualBankSoalan(soalan) {
       tr.appendChild(td);
     });
 
+    // Butang Edit
+    const tdTindakan = document.createElement("td");
+
+    const butangEdit = document.createElement("button");
+    butangEdit.type = "button";
+    butangEdit.textContent = "Edit";
+    butangEdit.addEventListener("click", () => {
+      editSoalanBank(item.kodSoalan);
+    });
+
+    // Butang Arkib
+    const butangArkib = document.createElement("button");
+    butangArkib.type = "button";
+    butangArkib.textContent = "Arkib";
+    butangArkib.style.marginLeft = "6px";
+    butangArkib.addEventListener("click", () => {
+      arkibSoalanBank(item.kodSoalan);
+    });
+
+    tdTindakan.appendChild(butangEdit);
+    tdTindakan.appendChild(butangArkib);
+    tr.appendChild(tdTindakan);
+
     tbody.appendChild(tr);
   });
 }
+
 
 function kemasKiniJenisBankSoalan() {
   const jenis = $("bankJenisSoalan")?.value || "OBJEKTIF";
