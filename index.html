@@ -376,6 +376,151 @@
         </div>
       </section>
 
+      
+<!-- BANK SOALAN V2 -->
+<section class="panel" id="panelBankSoalan">
+  <h2>Bank Soalan</h2>
+
+  <div class="notice">
+    Pensyarah boleh melihat bank soalan mengikut kod pentaksiran
+    dan menambah soalan objektif atau subjektif.
+  </div>
+
+  <div class="filters">
+    <div>
+      <label for="bankKodPentaksiran">Kod Pentaksiran</label>
+      <select id="bankKodPentaksiran">
+        <option value="">Pilih pentaksiran</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="bankCarian">Carian Soalan</label>
+      <input
+        id="bankCarian"
+        type="search"
+        placeholder="Cari kod atau teks soalan"
+      >
+    </div>
+
+    <div>
+      <button id="bankMuatButton" type="button">
+        Muat Bank Soalan
+      </button>
+    </div>
+  </div>
+
+  <p id="bankStatus" class="status" role="status" aria-live="polite"></p>
+
+  <div class="table-wrap" style="margin-top:14px">
+    <table>
+      <thead>
+        <tr>
+          <th>Kod Soalan</th>
+          <th>Jenis</th>
+          <th>Soalan</th>
+          <th>Jawapan Betul</th>
+          <th>Markah</th>
+          <th>Topik</th>
+        </tr>
+      </thead>
+      <tbody id="bankJadualBody">
+        <tr>
+          <td colspan="6">Pilih pentaksiran untuk melihat bank soalan.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <h3>Tambah Soalan Baharu</h3>
+
+  <form id="bankBorang">
+    <div class="filters">
+      <div>
+        <label for="bankJenisSoalan">Jenis Soalan</label>
+        <select id="bankJenisSoalan" required>
+          <option value="OBJEKTIF">Objektif</option>
+          <option value="SUBJEKTIF">Subjektif</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="bankMarkah">Markah Penuh</label>
+        <input
+          id="bankMarkah"
+          type="number"
+          min="1"
+          step="1"
+          value="1"
+          required
+        >
+      </div>
+
+      <div>
+        <label for="bankTopik">Topik</label>
+        <input id="bankTopik" type="text" placeholder="Nama topik">
+      </div>
+    </div>
+
+    <div>
+      <label for="bankSoalan">Teks Soalan</label>
+      <textarea
+        id="bankSoalan"
+        rows="3"
+        required
+        placeholder="Masukkan teks soalan"
+      ></textarea>
+    </div>
+
+    <div id="bankPilihanPanel">
+      <div class="filters">
+        <div>
+          <label for="bankPilihanA">Pilihan A</label>
+          <input id="bankPilihanA" type="text">
+        </div>
+        <div>
+          <label for="bankPilihanB">Pilihan B</label>
+          <input id="bankPilihanB" type="text">
+        </div>
+        <div>
+          <label for="bankPilihanC">Pilihan C</label>
+          <input id="bankPilihanC" type="text">
+        </div>
+        <div>
+          <label for="bankPilihanD">Pilihan D</label>
+          <input id="bankPilihanD" type="text">
+        </div>
+      </div>
+
+      <div>
+        <label for="bankJawapanBetul">Jawapan Betul</label>
+        <select id="bankJawapanBetul">
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="bankKodGambar">Kod Gambar (jika ada)</label>
+      <input
+        id="bankKodGambar"
+        type="text"
+        placeholder="Pilihan: kod rujukan gambar"
+      >
+    </div>
+
+    <button id="bankSimpanButton" type="submit">
+      Simpan Soalan
+    </button>
+  </form>
+</section>
+<!-- TAMAT BANK SOALAN V2 -->
+
       <!-- SEMAKAN SUBJEKTIF -->
       <section class="panel">
         <h2>Semakan Jawapan Subjektif</h2>
