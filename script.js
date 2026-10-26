@@ -704,6 +704,47 @@ function paparJadualBankSoalan(soalan) {
   });
 }
 
+function editSoalanBank(kodSoalan) {
+  const statusEl = $("bankStatus");
+
+  const item = cacheBankSoalan.find(
+    soalan => String(soalan.kodSoalan) === String(kodSoalan)
+  );
+
+  if (!item) {
+    paparMesej(statusEl, "Soalan tidak ditemui. Muat semula bank soalan.");
+    return;
+  }
+
+  kodSoalanSedangDiedit = item.kodSoalan;
+
+  $("bankKodPentaksiran").value = item.kodPentaksiran || "";
+  $("bankJenisSoalan").value = item.jenisSoalan || "OBJEKTIF";
+  $("bankSoalan").value = item.soalan || "";
+  $("bankMarkah").value = item.markah ?? "";
+  $("bankTopik").value = item.topik || "";
+  $("bankKodGambar").value = item.kodGambar || "";
+  $("bankPilihanA").value = item.pilihanA || "";
+  $("bankPilihanB").value = item.pilihanB || "";
+  $("bankPilihanC").value = item.pilihanC || "";
+  $("bankPilihanD").value = item.pilihanD || "";
+  $("bankJawapanBetul").value = item.jawapanBetul || "";
+
+  kemasKiniJenisBankSoalan();
+
+  const butang = $("bankSimpanButton");
+  if (butang) {
+    butang.textContent = "Simpan Perubahan";
+  }
+
+  paparMesej(
+    statusEl,
+    "Mod edit: ubah maklumat soalan, kemudian tekan Simpan Perubahan."
+  );
+
+  $("bankSoalan").focus();
+}
+
 
 function kemasKiniJenisBankSoalan() {
   const jenis = $("bankJenisSoalan")?.value || "OBJEKTIF";
