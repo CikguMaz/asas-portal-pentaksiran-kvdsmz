@@ -3,6 +3,8 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwL0dkMjE8-eWpS7A6zEV0FUKmOzaxjzOuT-9FWGvo673sg-ln9mVtv-EchNWckTuLM/exec";
 const TOKEN_KEY = "ASAS_V2_TOKEN_PENSYARAH";
 
+let kodSoalanSedangDiedit = "";
+
 const $ = (id) => document.getElementById(id);
 const loginForm = $("loginForm");
 const loginButton = $("loginButton");
