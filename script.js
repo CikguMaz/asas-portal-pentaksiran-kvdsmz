@@ -914,6 +914,19 @@ async function simpanBankSoalan(event) {
   );
 
   try {
+    console.log("Mod edit:", modEdit);
+console.log(
+  "Token tersedia:",
+  Boolean(tokenPensyarah)
+);
+console.log(
+  "Panjang token:",
+  tokenPensyarah ? tokenPensyarah.length : 0
+);
+console.log(
+  "Tindakan dihantar:",
+  modEdit ? "kemasKiniSoalanBankV2" : "tambahSoalanBankV2"
+);
    const hasil = await panggilAPI({
   tindakan: modEdit
     ? "kemasKiniSoalanBankV2"
